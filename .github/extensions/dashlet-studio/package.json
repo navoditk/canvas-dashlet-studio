@@ -1,0 +1,10 @@
+{
+  "name": "dashlet-studio",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Canvas smoke test extension for Dashlet Studio",
+  "scripts": {
+    "test": "node --test *.test.mjs"
+  }
+}
