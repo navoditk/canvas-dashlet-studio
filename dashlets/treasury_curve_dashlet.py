@@ -242,7 +242,7 @@ def index() -> str:
 
         <label class="block">
           <span class="text-sm text-slate-700">Data Mode</span>
-          <select class="mt-1 w-full rounded-md border-slate-300" x-model="selectedDataMode" @change="loadCurve">
+          <select class="mt-1 w-full rounded-md border-slate-300" x-model="selectedDataMode" @change="onDataModeChange">
             <option value="fixture">fixture</option>
             <option value="eod">eod</option>
           </select>
@@ -380,6 +380,8 @@ def index() -> str:
         lastCurveDate: "",
         lastComparisonBaseDate: "",
         lastComparisonDate: "",
+        dataModeToken: 0,
+        dataModeChain: null,
 
         async init() {
           this.statusText = "Initializing";
@@ -509,9 +511,13 @@ def index() -> str:
           this.applySlopeCards();
         },
 
+        // Returns true when the curve (and its dependent slopes/provenance) loaded
+        // successfully, false otherwise. Callers that chain further requests (e.g.
+        // onDataModeChange) use this to avoid reloading dependents against a mode
+        // whose curve request just failed.
         async loadCurve() {
           if (this.isLoadingCurve || this.isLoadingComparison) {
-            return;
+            return false;
           }
 
           this.isLoadingCurve = true;
@@ -538,14 +544,68 @@ def index() -> str:
             this.lastCurveDate = payload.provenance?.observation_date || this.selectedDate || "";
             this.renderCurveChart();
             await this.loadSlopes();
+            // Provenance is applied together with curvePoints/slopes above, in the
+            // same successful pass, so the displayed data and its provenance label
+            // always change atomically. On failure (see catch below) neither is
+            // touched, so a failed eod attempt can never relabel retained fixture
+            // data (or vice versa).
             this.applyCurveProvenance(payload.provenance);
 
             this.statusText = "Curve loaded";
+            return true;
           } catch (err) {
             this.errorMessage = String(err);
             this.statusText = "Error";
+            return false;
           } finally {
             this.isLoadingCurve = false;
+          }
+        },
+
+        // Orchestrates a data-mode switch: reloads curve+slopes for the new mode,
+        // then reloads comparison only when both comparison dates are already
+        // selected (reusing loadComparison's own date guard rather than
+        // duplicating that validation here).
+        //
+        // Mode-change requests are serialized on `dataModeChain` and gated by
+        // `dataModeToken` so that if the user switches modes again before a
+        // request settles, the now-superseded request never applies its result -
+        // only the most recently selected mode's data is ever shown.
+        async onDataModeChange() {
+          const token = ++this.dataModeToken;
+          const previousChain = this.dataModeChain instanceof Promise ? this.dataModeChain : Promise.resolve();
+          const chained = previousChain.catch(() => {}).then(() => this.applyDataModeChange(token));
+          this.dataModeChain = chained;
+          await chained;
+        },
+
+        async applyDataModeChange(token) {
+          if (token !== this.dataModeToken) {
+            return; // A newer mode change was requested before this one started.
+          }
+
+          const curveLoaded = await this.loadCurve();
+
+          if (token !== this.dataModeToken) {
+            return; // A newer mode change fired while this curve load was in flight.
+          }
+
+          if (!curveLoaded) {
+            // Do not attempt a comparison reload against a mode whose curve just
+            // failed to load; the existing errorMessage/statusText already
+            // reflect that failure and retained data/provenance are unchanged.
+            return;
+          }
+
+          if (this.selectedDate && this.compareDate) {
+            await this.loadComparison();
+          } else if (token === this.dataModeToken) {
+            // Comparison dates are not both selected: nothing to reload. Clear any
+            // comparison results from a previous mode instead of silently
+            // retaining them under the newly selected mode's label.
+            this.comparisonPoints = [];
+            this.lastComparisonBaseDate = "";
+            this.lastComparisonDate = "";
           }
         },
 

@@ -4,6 +4,7 @@ import { DashletRuntime } from "./dashlet-runtime.mjs";
 import { ToolProxy } from "./tool-proxy.mjs";
 import { createControlApiHandler, createControlToken, renderCanvasPage } from "./control-server.mjs";
 import { installProcessCleanupHandlers } from "./process-cleanup.mjs";
+import { TREASURY_TOOL_PARAMETER_SCHEMAS, DEFAULT_TOOL_PARAMETER_SCHEMA } from "./treasury-tool-schemas.mjs";
 
 const DASHLET_REGISTRY = Object.freeze({
     hello: Object.freeze({
@@ -28,6 +29,7 @@ const TOOL_DESCRIPTIONS = Object.freeze({
     get_treasury_curve_slopes: "Get canonical Treasury curve slopes for one observation date.",
     compare_treasury_curves: "Compare two Treasury curves and return basis-point deltas by maturity.",
 });
+
 const canvasServers = new Map();
 
 let sessionRef = null;
@@ -203,11 +205,7 @@ const session = await joinSession({
     tools: REGISTERED_TOOL_IDS.map((operationId) => ({
         name: operationId,
         description: TOOL_DESCRIPTIONS[operationId] ?? `Proxy approved dashlet operation "${operationId}".`,
-        parameters: {
-            type: "object",
-            additionalProperties: true,
-            properties: {},
-        },
+        parameters: TREASURY_TOOL_PARAMETER_SCHEMAS[operationId] ?? DEFAULT_TOOL_PARAMETER_SCHEMA,
         handler: async (args) => {
             try {
                 await ensureRuntimeReady();
