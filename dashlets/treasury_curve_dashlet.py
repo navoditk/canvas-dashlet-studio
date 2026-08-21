@@ -17,6 +17,7 @@ from treasury_fixture import (
     load_fixture,
     to_curve_response,
 )
+from dashlets.treasury_provider import ProviderError
 
 FIXTURE_DIR = Path(__file__).resolve().parents[1] / "fixtures" / "treasury"
 DATE_EXAMPLES = ["2026-08-19"]
@@ -173,6 +174,26 @@ def _compare_curves_or_422(base_points, compare_points):
             status_code=422,
             detail={"error_code": "maturity_mismatch", "message": str(exc)},
         ) from exc
+
+
+_PROVIDER_STATUS_MAP: dict[str, int] = {
+    "fixture_not_found":  404,
+    "date_not_in_feed":   404,
+    "invalid_date":       422,
+    "feed_parse_error":   502,
+    "feed_date_error":    502,
+    "feed_http_error":    502,
+    "feed_timeout":       504,
+    "feed_network_error": 502,
+}
+
+
+def _provider_error_to_http(exc: ProviderError) -> HTTPException:
+    status_code = _PROVIDER_STATUS_MAP.get(exc.error_code, 502)
+    raise HTTPException(
+        status_code=status_code,
+        detail={"error_code": exc.error_code, "message": exc.message},
+    )
 
 
 @app.get("/", response_class=HTMLResponse)
