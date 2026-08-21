@@ -3,6 +3,7 @@ from __future__ import annotations
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass
 from datetime import UTC, date, datetime
+from enum import Enum
 from pathlib import Path
 from typing import Protocol
 
@@ -40,6 +41,11 @@ MATURITY_MAP: list[tuple[str, str, float]] = [
     ("BC_20YEAR",  "20Y", 20.0),
     ("BC_30YEAR",  "30Y", 30.0),
 ]
+
+
+class TreasuryDataMode(str, Enum):
+    FIXTURE = "fixture"
+    EOD = "eod"
 
 
 class ProviderError(Exception):
@@ -199,7 +205,7 @@ def normalize_to_curve_response(
 
     provenance = Provenance(
         source="treasury-gov",
-        data_mode="live",
+        data_mode="eod",
         observation_date=obs_date,
         retrieved_at=retrieved_at,
         source_url=source_url,
@@ -210,7 +216,7 @@ def normalize_to_curve_response(
 
 
 class PublicTreasuryProvider:
-    data_mode = "live"
+    data_mode = "eod"
 
     def get_curve(self, observation_date: str) -> TreasuryCurveResponse:
         xml_text, source_url = fetch_treasury_feed(observation_date)
@@ -228,6 +234,16 @@ def make_provider(
 ) -> FixtureTreasuryProvider | PublicTreasuryProvider:
     if data_mode == "fixture":
         return FixtureTreasuryProvider(fixture_dir)
-    if data_mode == "live":
+    if data_mode == "eod":
         return PublicTreasuryProvider()
-    raise ValueError(f"Unknown data_mode: {data_mode!r}. Expected 'fixture' or 'live'.")
+    raise ValueError(f"Unknown data_mode: {data_mode!r}. Expected 'fixture' or 'eod'.")
+
+
+def resolve_provider(
+    data_mode: TreasuryDataMode, fixture_dir: Path
+) -> FixtureTreasuryProvider | PublicTreasuryProvider:
+    registry: dict[TreasuryDataMode, FixtureTreasuryProvider | PublicTreasuryProvider] = {
+        TreasuryDataMode.FIXTURE: FixtureTreasuryProvider(fixture_dir),
+        TreasuryDataMode.EOD: PublicTreasuryProvider(),
+    }
+    return registry[data_mode]

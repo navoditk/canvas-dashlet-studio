@@ -17,7 +17,7 @@ from treasury_fixture import (
     load_fixture,
     to_curve_response,
 )
-from dashlets.treasury_provider import ProviderError
+from dashlets.treasury_provider import ProviderError, TreasuryDataMode, resolve_provider
 
 FIXTURE_DIR = Path(__file__).resolve().parents[1] / "fixtures" / "treasury"
 DATE_EXAMPLES = ["2026-08-19"]
@@ -89,6 +89,14 @@ def _required_date_query(description: str):
         description=description,
         examples=DATE_EXAMPLES,
     )
+
+
+def _required_data_mode_query():
+  return Query(
+    ...,
+    description="Required treasury data mode. Allowed values: fixture, eod.",
+    examples=["fixture"],
+  )
 
 
 def _fixture_path_for_date(observation_date: str) -> Path:
@@ -221,7 +229,7 @@ def index() -> str:
     </header>
 
     <section class="bg-white rounded-lg border border-slate-200 p-4">
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
+      <div class="grid grid-cols-1 md:grid-cols-5 gap-3 items-end">
         <label class="block">
           <span class="text-sm text-slate-700">Observation Date</span>
           <select class="mt-1 w-full rounded-md border-slate-300" x-model="selectedDate">
@@ -229,6 +237,14 @@ def index() -> str:
             <template x-for="d in availableDates" :key="'obs-' + d">
               <option :value="d" x-text="d"></option>
             </template>
+          </select>
+        </label>
+
+        <label class="block">
+          <span class="text-sm text-slate-700">Data Mode</span>
+          <select class="mt-1 w-full rounded-md border-slate-300" x-model="selectedDataMode" @change="loadCurve">
+            <option value="fixture">fixture</option>
+            <option value="eod">eod</option>
           </select>
         </label>
 
@@ -354,6 +370,7 @@ def index() -> str:
         availableDates: [],
         selectedDate: "",
         compareDate: "",
+        selectedDataMode: "fixture",
         curvePoints: [],
         comparisonPoints: [],
         slopesByName: {},
@@ -476,7 +493,11 @@ def index() -> str:
         },
 
         async loadSlopes() {
-          const query = this.selectedDate ? `?date=${encodeURIComponent(this.selectedDate)}` : "";
+          const params = new URLSearchParams({ data_mode: this.selectedDataMode });
+          if (this.selectedDate) {
+            params.set("date", this.selectedDate);
+          }
+          const query = `?${params.toString()}`;
           const response = await fetch(`./api/treasury/slopes${query}`);
           if (!response.ok) {
             throw new Error(await this.parseErrorMessage(response, "Failed to load slopes"));
@@ -502,7 +523,11 @@ def index() -> str:
           this.slope3m10yText = "--";
 
           try {
-            const query = this.selectedDate ? `?date=${encodeURIComponent(this.selectedDate)}` : "";
+            const params = new URLSearchParams({ data_mode: this.selectedDataMode });
+            if (this.selectedDate) {
+              params.set("date", this.selectedDate);
+            }
+            const query = `?${params.toString()}`;
             const response = await fetch(`./api/treasury/curve${query}`);
             if (!response.ok) {
               throw new Error(await this.parseErrorMessage(response, "Failed to load curve"));
@@ -550,7 +575,12 @@ def index() -> str:
           this.comparisonPoints = [];
 
           try {
-            const query = `?base_date=${encodeURIComponent(this.selectedDate)}&compare_date=${encodeURIComponent(this.compareDate)}`;
+            const params = new URLSearchParams({
+              data_mode: this.selectedDataMode,
+              base_date: this.selectedDate,
+              compare_date: this.compareDate,
+            });
+            const query = `?${params.toString()}`;
             const response = await fetch(`./api/treasury/compare${query}`);
             if (!response.ok) {
               throw new Error(await this.parseErrorMessage(response, "Failed to load comparison"));
@@ -661,10 +691,14 @@ def get_treasury_curve_view(
 )
 def get_treasury_curve(
     date: str | None = _optional_date_query(description=OBSERVATION_DATE_DESCRIPTION),
+    data_mode: TreasuryDataMode = _required_data_mode_query(),
 ) -> TreasuryCurveResponse:
     resolved_date = _resolve_observation_date_str(date)
-    fixture = _load_fixture_for_date(resolved_date)
-    return _curve_response_with_freshness(fixture)
+    provider = resolve_provider(data_mode, FIXTURE_DIR)
+    try:
+        return provider.get_curve(resolved_date)
+    except ProviderError as exc:
+        raise _provider_error_to_http(exc)
 
 
 @app.get(
@@ -685,13 +719,17 @@ def get_treasury_curve(
 )
 def get_curve_slopes(
     date: str | None = _optional_date_query(description=OBSERVATION_DATE_DESCRIPTION),
+    data_mode: TreasuryDataMode = _required_data_mode_query(),
 ) -> TreasuryCurveSlopesResponse:
     resolved_date = _resolve_observation_date_str(date)
-    fixture = _load_fixture_for_date(resolved_date)
-    curve_response = _curve_response_with_freshness(fixture)
+    provider = resolve_provider(data_mode, FIXTURE_DIR)
+    try:
+        curve_response = provider.get_curve(resolved_date)
+    except ProviderError as exc:
+        raise _provider_error_to_http(exc)
     slopes = _compute_slopes_or_422(curve_response.points)
     return TreasuryCurveSlopesResponse(
-        observation_date=fixture.observation_date,
+        observation_date=curve_response.provenance.observation_date,
         slopes=slopes,
         provenance=curve_response.provenance,
     )
@@ -716,28 +754,28 @@ def get_curve_slopes(
 def compare_treasury_curves(
     base_date: str = _required_date_query(description=BASE_DATE_DESCRIPTION),
     compare_date: str = _required_date_query(description=COMPARE_DATE_DESCRIPTION),
+    data_mode: TreasuryDataMode = _required_data_mode_query(),
 ) -> TreasuryCurveComparisonResponse:
-    base_fixture = _load_fixture_for_date(base_date)
-    compare_fixture = _load_fixture_for_date(compare_date)
+    provider = resolve_provider(data_mode, FIXTURE_DIR)
+    try:
+        base_curve = provider.get_curve(base_date)
+        compare_curve = provider.get_curve(compare_date)
+    except ProviderError as exc:
+        raise _provider_error_to_http(exc)
 
-    base_curve = _curve_response_with_freshness(base_fixture)
-    compare_curve = _curve_response_with_freshness(compare_fixture)
     comparison_points = _compare_curves_or_422(base_curve.points, compare_curve.points)
-    latest_date = _latest_available_date_str()
-    is_stale = (
-      base_fixture.observation_date.isoformat() != latest_date
-      or compare_fixture.observation_date.isoformat() != latest_date
-    )
+    is_stale = base_curve.provenance.is_stale or compare_curve.provenance.is_stale
 
     return TreasuryCurveComparisonResponse(
-        base_observation_date=base_fixture.observation_date,
-        compare_observation_date=compare_fixture.observation_date,
+        base_observation_date=base_curve.provenance.observation_date,
+        compare_observation_date=compare_curve.provenance.observation_date,
         points=comparison_points,
         provenance=Provenance(
-            source="synthetic-fixture",
-            data_mode=base_fixture.fixture_meta.data_mode,
-            observation_date=base_fixture.observation_date,
+            source=base_curve.provenance.source,
+            data_mode=base_curve.provenance.data_mode,
+            observation_date=base_curve.provenance.observation_date,
             retrieved_at=datetime.now(UTC),
+            source_url=base_curve.provenance.source_url,
             is_stale=is_stale,
         ),
     )

@@ -1,4 +1,5 @@
 import sys
+from datetime import UTC, date, datetime
 from pathlib import Path
 
 from fastapi.testclient import TestClient
@@ -6,6 +7,7 @@ from fastapi.testclient import TestClient
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from dashlets.treasury_curve_dashlet import app
+from treasury_fixture import CurvePoint, Provenance, TreasuryCurveResponse
 
 client = TestClient(app)
 
@@ -355,3 +357,164 @@ def test_compare_endpoint_same_latest_dates_are_not_stale() -> None:
     assert response.status_code == 200
     payload = response.json()
     assert payload["provenance"]["is_stale"] is False
+
+
+def _stub_curve_response(observation_date: str, data_mode: str) -> TreasuryCurveResponse:
+    return TreasuryCurveResponse(
+        points=[
+            CurvePoint(maturity_label="3M", maturity_years=0.25, yield_percent=4.90),
+            CurvePoint(maturity_label="2Y", maturity_years=2.0, yield_percent=4.20),
+            CurvePoint(maturity_label="5Y", maturity_years=5.0, yield_percent=4.00),
+            CurvePoint(maturity_label="10Y", maturity_years=10.0, yield_percent=4.18),
+            CurvePoint(maturity_label="30Y", maturity_years=30.0, yield_percent=4.40),
+        ],
+        provenance=Provenance(
+            source=f"stub-{data_mode}",
+            data_mode=data_mode,
+            observation_date=date.fromisoformat(observation_date),
+            retrieved_at=datetime.now(UTC),
+            source_url=None,
+            is_stale=False,
+        ),
+    )
+
+
+def test_curve_endpoint_fixture_mode_calls_only_fixture_provider(monkeypatch) -> None:
+    from dashlets import treasury_curve_dashlet
+
+    calls = {"fixture": 0, "eod": 0}
+
+    class StubProvider:
+        def __init__(self, mode: str) -> None:
+            self.mode = mode
+
+        def get_curve(self, observation_date: str) -> TreasuryCurveResponse:
+            calls[self.mode] += 1
+            return _stub_curve_response(observation_date, self.mode)
+
+    fixture_provider = StubProvider("fixture")
+    eod_provider = StubProvider("eod")
+
+    def resolver(mode, _fixture_dir):
+        return fixture_provider if mode.value == "fixture" else eod_provider
+
+    monkeypatch.setattr(treasury_curve_dashlet, "resolve_provider", resolver)
+
+    response = client.get(
+        "/api/treasury/curve",
+        params={"date": "2026-08-19", "data_mode": "fixture"},
+    )
+
+    assert response.status_code == 200
+    assert calls["fixture"] == 1
+    assert calls["eod"] == 0
+    assert response.json()["provenance"]["data_mode"] == "fixture"
+
+
+def test_curve_endpoint_eod_mode_calls_only_eod_provider(monkeypatch) -> None:
+    from dashlets import treasury_curve_dashlet
+
+    calls = {"fixture": 0, "eod": 0}
+
+    class StubProvider:
+        def __init__(self, mode: str) -> None:
+            self.mode = mode
+
+        def get_curve(self, observation_date: str) -> TreasuryCurveResponse:
+            calls[self.mode] += 1
+            return _stub_curve_response(observation_date, self.mode)
+
+    fixture_provider = StubProvider("fixture")
+    eod_provider = StubProvider("eod")
+
+    def resolver(mode, _fixture_dir):
+        return fixture_provider if mode.value == "fixture" else eod_provider
+
+    monkeypatch.setattr(treasury_curve_dashlet, "resolve_provider", resolver)
+
+    response = client.get(
+        "/api/treasury/curve",
+        params={"date": "2026-08-19", "data_mode": "eod"},
+    )
+
+    assert response.status_code == 200
+    assert calls["fixture"] == 0
+    assert calls["eod"] == 1
+    assert response.json()["provenance"]["data_mode"] == "eod"
+
+
+def test_curve_endpoint_rejects_omitted_data_mode() -> None:
+    response = client.get("/api/treasury/curve", params={"date": "2026-08-19"})
+    assert response.status_code == 422
+
+
+def test_curve_endpoint_rejects_unsupported_data_mode() -> None:
+    response = client.get(
+        "/api/treasury/curve",
+        params={"date": "2026-08-19", "data_mode": "live"},
+    )
+    assert response.status_code == 422
+
+
+def test_fixture_mode_performs_no_network_request(monkeypatch) -> None:
+    from dashlets import treasury_provider
+
+    called = {"httpx_client": 0}
+
+    class TrackingClient:
+        def __init__(self, *args, **kwargs):
+            called["httpx_client"] += 1
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+        def get(self, _url):
+            raise AssertionError("Fixture mode should never call remote HTTP")
+
+    monkeypatch.setattr(treasury_provider.httpx, "Client", TrackingClient)
+
+    response = client.get(
+        "/api/treasury/curve",
+        params={"date": "2026-08-19", "data_mode": "fixture"},
+    )
+
+    assert response.status_code == 200
+    assert called["httpx_client"] == 0
+
+
+def test_eod_failure_does_not_fallback_to_fixture(monkeypatch) -> None:
+    from dashlets import treasury_curve_dashlet
+
+    calls = {"fixture": 0, "eod": 0}
+
+    class FixtureProvider:
+        def get_curve(self, _observation_date: str) -> TreasuryCurveResponse:
+            calls["fixture"] += 1
+            return _stub_curve_response("2026-08-19", "fixture")
+
+    class FailingEodProvider:
+        def get_curve(self, _observation_date: str) -> TreasuryCurveResponse:
+            calls["eod"] += 1
+            raise treasury_curve_dashlet.ProviderError("feed_timeout", "timeout")
+
+    fixture_provider = FixtureProvider()
+    failing_eod_provider = FailingEodProvider()
+
+    def resolver(mode, _fixture_dir):
+        return fixture_provider if mode.value == "fixture" else failing_eod_provider
+
+    monkeypatch.setattr(treasury_curve_dashlet, "resolve_provider", resolver)
+
+    response = client.get(
+        "/api/treasury/curve",
+        params={"date": "2026-08-19", "data_mode": "eod"},
+    )
+
+    assert response.status_code == 504
+    assert calls["eod"] == 1
+    assert calls["fixture"] == 0
+    detail = response.json()["detail"]
+    assert detail["error_code"] == "feed_timeout"
