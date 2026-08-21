@@ -1,0 +1,14 @@
+{
+  "fixture_meta": {
+    "note": "Deterministic synthetic test fixture. Not live market data.",
+    "data_mode": "fixture"
+  },
+  "observation_date": "2026-08-18",
+  "curve": [
+    { "maturity_label": "3M",  "maturity_years": 0.25, "yield_percent": 4.95 },
+    { "maturity_label": "2Y",  "maturity_years": 2.0,  "yield_percent": 4.30 },
+    { "maturity_label": "5Y",  "maturity_years": 5.0,  "yield_percent": 4.05 },
+    { "maturity_label": "10Y", "maturity_years": 10.0, "yield_percent": 4.12 },
+    { "maturity_label": "30Y", "maturity_years": 30.0, "yield_percent": 4.35 }
+  ]
+}
