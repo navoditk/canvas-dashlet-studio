@@ -288,3 +288,70 @@ def test_compare_endpoint_mismatched_maturities_returns_controlled_422(monkeypat
     detail = response.json()["detail"]
     assert detail["error_code"] == "maturity_mismatch"
     assert "Maturity labels must match" in detail["message"]
+
+
+def test_root_page_returns_html_shell() -> None:
+    response = client.get("/")
+    assert response.status_code == 200
+    assert "text/html" in response.headers["content-type"]
+
+    html = response.text
+    assert "<title>Treasury Curve Dashlet</title>" in html
+    assert 'x-data="treasuryApp"' in html
+    assert 'id="curve-chart"' in html
+
+
+def test_root_page_contains_expected_controls_and_state_hooks() -> None:
+    response = client.get("/")
+    assert response.status_code == 200
+    html = response.text
+
+    assert 'x-model="selectedDate"' in html
+    assert 'x-model="compareDate"' in html
+    assert '@click="loadCurve"' in html
+    assert '@click="loadComparison"' in html
+    assert 'x-show="isLoadingCurve || isLoadingComparison"' in html
+    assert 'x-text="provenanceText"' in html
+
+
+def test_root_page_uses_mount_relative_api_fetch_paths() -> None:
+    response = client.get("/")
+    assert response.status_code == 200
+    html = response.text
+
+    assert 'fetch("./api/treasury/fixture-dates")' in html
+    assert 'fetch(`./api/treasury/curve${query}`)' in html
+    assert 'fetch(`./api/treasury/slopes${query}`)' in html
+    assert 'fetch(`./api/treasury/compare${query}`)' in html
+
+
+def test_root_page_contains_expanded_provenance_contract_tokens() -> None:
+    response = client.get("/")
+    assert response.status_code == 200
+    html = response.text
+
+    assert "curve_date=" in html
+    assert "compare_base=" in html
+    assert "compare_date=" in html
+    assert "stale=" in html
+    assert "retrieved_at=" in html
+
+
+def test_compare_endpoint_marks_stale_when_either_observation_date_is_not_latest() -> None:
+    response = client.get(
+        "/api/treasury/compare",
+        params={"base_date": "2026-08-18", "compare_date": "2026-08-19"},
+    )
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["provenance"]["is_stale"] is True
+
+
+def test_compare_endpoint_same_latest_dates_are_not_stale() -> None:
+    response = client.get(
+        "/api/treasury/compare",
+        params={"base_date": "2026-08-19", "compare_date": "2026-08-19"},
+    )
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["provenance"]["is_stale"] is False
