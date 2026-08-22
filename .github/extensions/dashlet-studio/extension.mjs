@@ -4,11 +4,37 @@ import { DashletRuntime } from "./dashlet-runtime.mjs";
 import { ToolProxy } from "./tool-proxy.mjs";
 import { createControlApiHandler, createControlToken, renderCanvasPage } from "./control-server.mjs";
 import { installProcessCleanupHandlers } from "./process-cleanup.mjs";
+import { TREASURY_TOOL_PARAMETER_SCHEMAS, DEFAULT_TOOL_PARAMETER_SCHEMA } from "./treasury-tool-schemas.mjs";
 
-const ALLOWLIST = new Set(["get_dashlet_summary"]);
+const DASHLET_REGISTRY = Object.freeze({
+    hello: Object.freeze({
+        id: "hello",
+        displayName: "Hello Dashlet",
+        module: "dashlets.hello_dashlet:app",
+        approvedTools: Object.freeze(["get_dashlet_summary"]),
+    }),
+    "treasury-curve": Object.freeze({
+        id: "treasury-curve",
+        displayName: "Treasury Curve",
+        module: "dashlets.treasury_curve_dashlet:app",
+        approvedTools: Object.freeze(["get_treasury_curve", "get_treasury_curve_slopes", "compare_treasury_curves"]),
+    }),
+});
+const REGISTERED_TOOL_IDS = [
+    ...new Set(Object.values(DASHLET_REGISTRY).flatMap((entry) => entry.approvedTools)),
+];
+const TOOL_DESCRIPTIONS = Object.freeze({
+    get_dashlet_summary: "Get the typed summary from the local hello dashlet. This proxies GET /api/summary.",
+    get_treasury_curve: "Get the deterministic Treasury curve for one observation date.",
+    get_treasury_curve_slopes: "Get canonical Treasury curve slopes for one observation date.",
+    compare_treasury_curves: "Compare two Treasury curves and return basis-point deltas by maturity.",
+});
+
 const canvasServers = new Map();
 
 let sessionRef = null;
+let selectedDashletId = "hello";
+let activeDashletId = null;
 
 const runtime = new DashletRuntime({
     startupTimeoutMs: 20_000,
@@ -24,7 +50,7 @@ const runtime = new DashletRuntime({
 
 const proxy = new ToolProxy({
     runtime,
-    allowlist: ALLOWLIST,
+    allowlist: new Set(DASHLET_REGISTRY[selectedDashletId].approvedTools),
 });
 
 async function refreshToolsFromOpenApi() {
@@ -35,15 +61,109 @@ async function refreshToolsFromOpenApi() {
 
 function currentStatusPayload() {
     return {
+        selectedDashletId,
+        activeDashletId,
+        availableDashlets: Object.values(DASHLET_REGISTRY).map((entry) => ({
+            id: entry.id,
+            displayName: entry.displayName,
+        })),
         runtime: runtime.getState(),
         approvedOperations: proxy.listApprovedOperations(),
     };
 }
 
-async function ensureRunningAndLoaded() {
-    if (runtime.getState().status !== "running") {
-        await runtime.start();
+function assertKnownDashletId(dashletId) {
+    if (!Object.hasOwn(DASHLET_REGISTRY, dashletId)) {
+        throw new Error(`Unknown dashlet ID "${dashletId}"`);
     }
+}
+
+function selectedDashlet() {
+    return DASHLET_REGISTRY[selectedDashletId];
+}
+
+function isTransitionInProgress() {
+    const { status } = runtime.getState();
+    return status === "starting" || status === "stopping";
+}
+
+async function setSelectedDashlet(dashletId) {
+    assertKnownDashletId(dashletId);
+    if (isTransitionInProgress()) {
+        throw new Error("Cannot change dashlet selection while start/stop is in progress");
+    }
+    selectedDashletId = dashletId;
+    await runtime.log(`Selected dashlet changed to ${dashletId}`);
+}
+
+async function startSelectedDashlet() {
+    const target = selectedDashlet();
+    if (isTransitionInProgress()) {
+        throw new Error("Cannot start while another lifecycle operation is in progress");
+    }
+
+    if (runtime.getState().status === "running" && activeDashletId && activeDashletId !== target.id) {
+        await runtime.stop();
+        proxy.clear();
+        activeDashletId = null;
+    }
+
+    await runtime.start({
+        moduleTarget: target.module,
+        dashletId: target.id,
+    });
+    activeDashletId = target.id;
+    proxy.setAllowlist(new Set(target.approvedTools));
+    await refreshToolsFromOpenApi();
+}
+
+async function stopDashlet() {
+    if (isTransitionInProgress()) {
+        throw new Error("Cannot stop while another lifecycle operation is in progress");
+    }
+    await runtime.stop();
+    proxy.clear();
+    activeDashletId = null;
+}
+
+async function restartDashlet() {
+    const target = selectedDashlet();
+    if (isTransitionInProgress()) {
+        throw new Error("Cannot restart while another lifecycle operation is in progress");
+    }
+    if (runtime.getState().status === "running" && activeDashletId && activeDashletId !== target.id) {
+        await stopDashlet();
+        await startSelectedDashlet();
+        return;
+    }
+    await runtime.restart({
+        moduleTarget: target.module,
+        dashletId: target.id,
+    });
+    activeDashletId = target.id;
+    proxy.setAllowlist(new Set(target.approvedTools));
+    await refreshToolsFromOpenApi();
+}
+
+async function ensureRuntimeReady({ autoStart = false } = {}) {
+    if (runtime.getState().status !== "running") {
+        if (!autoStart) {
+            throw new Error("Dashlet is not running");
+        }
+        await startSelectedDashlet();
+        return;
+    }
+    if (!activeDashletId || !DASHLET_REGISTRY[activeDashletId]) {
+        throw new Error("Active dashlet state is unavailable");
+    }
+    if (activeDashletId !== selectedDashletId) {
+        if (!autoStart) {
+            throw new Error("Selected dashlet is not active");
+        }
+        await startSelectedDashlet();
+        return;
+    }
+    proxy.setAllowlist(new Set(DASHLET_REGISTRY[activeDashletId].approvedTools));
     await refreshToolsFromOpenApi();
 }
 
@@ -56,10 +176,11 @@ async function startCanvasServer(instanceId) {
     const expectedHost = `127.0.0.1:${port}`;
     const expectedOrigin = `http://${expectedHost}`;
     const controlHandler = createControlApiHandler({
-        runtime,
-        proxy,
         getStatusPayload: currentStatusPayload,
-        refreshToolsFromOpenApi,
+        setSelectedDashlet,
+        startSelectedDashlet,
+        stopDashlet,
+        restartDashlet,
         expectedHost,
         expectedOrigin,
         controlToken,
@@ -81,72 +202,79 @@ async function startCanvasServer(instanceId) {
 }
 
 const session = await joinSession({
-    // Tool registration is static for this smoke test; runtime invocation is lifecycle-gated
-    // by ensureRunningAndLoaded() and ToolProxy's live OpenAPI allowlist checks.
-    tools: [
-        {
-            name: "get_dashlet_summary",
-            description:
-                "Get the typed summary from the local hello dashlet. This proxies GET /api/summary.",
-            parameters: {
-                type: "object",
-                additionalProperties: false,
-                properties: {},
-            },
-            handler: async (args) => {
-                try {
-                    await ensureRunningAndLoaded();
-                    const result = await proxy.invoke("get_dashlet_summary", args ?? {});
-                    return {
-                        resultType: "success",
-                        textResultForLlm: JSON.stringify(result),
-                    };
-                } catch (error) {
-                    return {
-                        resultType: "failure",
-                        textResultForLlm: error instanceof Error ? error.message : String(error),
-                    };
-                }
-            },
+    tools: REGISTERED_TOOL_IDS.map((operationId) => ({
+        name: operationId,
+        description: TOOL_DESCRIPTIONS[operationId] ?? `Proxy approved dashlet operation "${operationId}".`,
+        parameters: TREASURY_TOOL_PARAMETER_SCHEMAS[operationId] ?? DEFAULT_TOOL_PARAMETER_SCHEMA,
+        handler: async (args) => {
+            try {
+                await ensureRuntimeReady();
+                const result = await proxy.invoke(operationId, args ?? {});
+                return {
+                    resultType: "success",
+                    textResultForLlm: JSON.stringify(result),
+                };
+            } catch (error) {
+                return {
+                    resultType: "failure",
+                    textResultForLlm: error instanceof Error ? error.message : String(error),
+                };
+            }
         },
-    ],
+    })),
     canvases: [
         createCanvas({
             id: "dashlet-studio",
             displayName: "Dashlet Studio",
             description:
-                "Run and inspect the hello FastAPI dashlet, with runtime controls and the get_dashlet_summary tool.",
+                "Run and inspect approved FastAPI dashlets (Hello and Treasury Curve) with runtime controls and gated tools.",
             actions: [
                 {
+                    name: "select_dashlet",
+                    description: "Select the approved dashlet ID for subsequent start/restart actions",
+                    inputSchema: {
+                        type: "object",
+                        additionalProperties: false,
+                        required: ["dashletId"],
+                        properties: {
+                            dashletId: {
+                                type: "string",
+                                enum: Object.keys(DASHLET_REGISTRY),
+                            },
+                        },
+                    },
+                    handler: async ({ input }) => {
+                        await setSelectedDashlet(input?.dashletId);
+                        return currentStatusPayload();
+                    },
+                },
+                {
                     name: "start_dashlet",
-                    description: "Start the local hello dashlet process",
+                    description: "Start the selected local dashlet process",
                     handler: async () => {
-                        await runtime.start();
-                        await refreshToolsFromOpenApi();
+                        await startSelectedDashlet();
                         return currentStatusPayload();
                     },
                 },
                 {
                     name: "stop_dashlet",
-                    description: "Stop the local hello dashlet process",
+                    description: "Stop the active local dashlet process",
                     handler: async () => {
-                        await runtime.stop();
-                        proxy.clear();
+                        await stopDashlet();
                         return currentStatusPayload();
                     },
                 },
                 {
                     name: "restart_dashlet",
-                    description: "Restart the local hello dashlet process",
+                    description: "Restart the selected local dashlet process",
                     handler: async () => {
-                        await runtime.restart();
-                        await refreshToolsFromOpenApi();
+                        await restartDashlet();
                         return currentStatusPayload();
                     },
                 },
                 {
                     name: "get_runtime_status",
-                    description: "Get runtime status and diagnostics for the hello dashlet",
+                    description: "Get runtime status and diagnostics for the active dashlet",
                     handler: async () => currentStatusPayload(),
                 },
             ],
@@ -157,7 +285,7 @@ const session = await joinSession({
                     canvasServers.set(ctx.instanceId, canvasServer);
                 }
                 try {
-                    await ensureRunningAndLoaded();
+                    await ensureRuntimeReady({ autoStart: true });
                 } catch (error) {
                     await runtime.log(
                         `Startup failed on open: ${error instanceof Error ? error.message : String(error)}`,
@@ -179,6 +307,7 @@ const session = await joinSession({
                 if (canvasServers.size === 0) {
                     await runtime.dispose();
                     proxy.clear();
+                    activeDashletId = null;
                 }
             },
         }),

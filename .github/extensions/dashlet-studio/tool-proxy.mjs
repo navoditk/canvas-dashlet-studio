@@ -52,9 +52,10 @@ export function selectApprovedOperations(openApiDocument, allowlist) {
 
 export function validateToolArgs(operation, args) {
     const parameters = Array.isArray(operation.operation.parameters) ? operation.operation.parameters : [];
+    const queryParameters = parameters.filter((parameter) => isObject(parameter) && parameter.in === "query");
     if (parameters.length === 0) {
         if (!isObject(args) || Object.keys(args).length === 0) {
-            return;
+            return {};
         }
         throw new Error(`Operation ${operation.operationId} does not accept arguments`);
     }
@@ -62,6 +63,29 @@ export function validateToolArgs(operation, args) {
     if (!isObject(args)) {
         throw new Error(`Operation ${operation.operationId} requires an object argument`);
     }
+
+    const allowedNames = new Set(queryParameters.map((parameter) => parameter.name).filter((name) => typeof name === "string"));
+    for (const key of Object.keys(args)) {
+        if (!allowedNames.has(key)) {
+            throw new Error(`Operation ${operation.operationId} does not accept argument "${key}"`);
+        }
+    }
+
+    const queryArgs = {};
+    for (const parameter of queryParameters) {
+        if (typeof parameter.name !== "string" || parameter.name.length === 0) {
+            continue;
+        }
+        const value = args[parameter.name];
+        if (value === undefined || value === null || value === "") {
+            if (parameter.required) {
+                throw new Error(`Operation ${operation.operationId} requires argument "${parameter.name}"`);
+            }
+            continue;
+        }
+        queryArgs[parameter.name] = value;
+    }
+    return queryArgs;
 }
 
 export function validateSummaryResponse(payload) {
@@ -82,6 +106,10 @@ export class ToolProxy {
         this.allowlist = allowlist;
         this.approvedOperations = new Map();
         this.openApiDocument = null;
+    }
+
+    setAllowlist(allowlist) {
+        this.allowlist = allowlist;
     }
 
     clear() {
@@ -113,8 +141,13 @@ export class ToolProxy {
         if (!operation) {
             throw new Error(`Operation "${operationId}" is not approved`);
         }
-        validateToolArgs(operation, args);
-        const response = await this.runtime.request(operation.pathName, {
+        const queryArgs = validateToolArgs(operation, args);
+        const query = new URLSearchParams();
+        for (const [key, value] of Object.entries(queryArgs)) {
+            query.set(key, String(value));
+        }
+        const requestPath = query.size > 0 ? `${operation.pathName}?${query.toString()}` : operation.pathName;
+        const response = await this.runtime.request(requestPath, {
             method: operation.method,
         });
         if (operationId === "get_dashlet_summary") {

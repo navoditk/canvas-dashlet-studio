@@ -65,6 +65,30 @@ function rejectInvalidMethod(res, allowed) {
     jsonResponse(res, 405, { error: "Method not allowed" });
 }
 
+async function readJsonBody(req, maxBytes = 4096) {
+    const chunks = [];
+    let total = 0;
+    for await (const chunk of req) {
+        total += chunk.length;
+        if (total > maxBytes) {
+            throw new Error("Request body too large");
+        }
+        chunks.push(chunk);
+    }
+    if (chunks.length === 0) {
+        return {};
+    }
+    const text = Buffer.concat(chunks).toString("utf8");
+    if (text.trim().length === 0) {
+        return {};
+    }
+    const parsed = JSON.parse(text);
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+        throw new Error("Request JSON body must be an object");
+    }
+    return parsed;
+}
+
 export function renderCanvasPage(controlToken) {
     return `<!doctype html>
 <html>
@@ -116,7 +140,11 @@ export function renderCanvasPage(controlToken) {
   <div class="layout">
     <section class="panel">
       <h2>Dashlet Studio</h2>
-      <p class="muted">Smoke-test controls for the local FastAPI process.</p>
+      <p class="muted">Smoke-test controls for approved local FastAPI dashlets.</p>
+      <div>
+        <label for="dashletSelect"><strong>Selected dashlet:</strong></label><br/>
+        <select id="dashletSelect"></select>
+      </div>
       <div class="controls">
         <button id="startBtn" type="button">Start</button>
         <button id="stopBtn" type="button">Stop</button>
@@ -134,12 +162,30 @@ export function renderCanvasPage(controlToken) {
   </div>
   <script>
     const CONTROL_TOKEN = ${JSON.stringify(controlToken)};
+    let pending = false;
     async function controlPost(path) {
       const response = await fetch(path, {
         method: "POST",
         headers: {
-          "X-Dashlet-Control-Token": CONTROL_TOKEN
-        }
+          "X-Dashlet-Control-Token": CONTROL_TOKEN,
+          "Content-Type": "application/json"
+        },
+        body: "{}"
+      });
+      if (!response.ok) {
+        const body = await response.text();
+        throw new Error(body || "Request failed");
+      }
+      return response.json();
+    }
+    async function controlPostJson(path, payload) {
+      const response = await fetch(path, {
+        method: "POST",
+        headers: {
+          "X-Dashlet-Control-Token": CONTROL_TOKEN,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(payload ?? {})
       });
       if (!response.ok) {
         const body = await response.text();
@@ -152,10 +198,38 @@ export function renderCanvasPage(controlToken) {
     }
     function render(state) {
       const runtime = state.runtime;
+      const select = document.getElementById("dashletSelect");
+      const options = Array.isArray(state.availableDashlets) ? state.availableDashlets : [];
+      const desired = state.selectedDashletId || "";
+      const previousValue = select.value;
+      select.innerHTML = "";
+      for (const option of options) {
+        const entry = document.createElement("option");
+        entry.value = option.id;
+        entry.textContent = option.displayName;
+        if (option.id === desired) {
+          entry.selected = true;
+        }
+        select.appendChild(entry);
+      }
+      if (desired && select.value !== desired) {
+        select.value = desired;
+      } else if (!desired && previousValue) {
+        select.value = previousValue;
+      }
+      const transitionLocked = runtime.status === "starting" || runtime.status === "stopping" || pending;
+      select.disabled = transitionLocked;
+      document.getElementById("startBtn").disabled = transitionLocked;
+      document.getElementById("stopBtn").disabled = transitionLocked;
+      document.getElementById("restartBtn").disabled = transitionLocked;
       document.getElementById("status").innerHTML = [
         "<p><strong>Status:</strong> " + runtime.status + "</p>",
+        "<p><strong>Selected:</strong> " + (state.selectedDashletId ?? "n/a") + "</p>",
+        "<p><strong>Active:</strong> " + (state.activeDashletId ?? "none") + "</p>",
         "<p><strong>Port:</strong> " + (runtime.port ?? "n/a") + "</p>",
+        "<p><strong>PID:</strong> " + (runtime.pid ?? "n/a") + "</p>",
         "<p><strong>Dashlet URL:</strong> " + (runtime.dashletUrl ?? "n/a") + "</p>",
+        "<p><strong>Module:</strong> " + (runtime.moduleTarget ?? "n/a") + "</p>",
         "<p><strong>Last error:</strong> " + (runtime.lastError ?? "none") + "</p>"
       ].join("");
       document.getElementById("ops").textContent = JSON.stringify(state.approvedOperations, null, 2);
@@ -176,9 +250,39 @@ export function renderCanvasPage(controlToken) {
         document.getElementById("diagnostics").textContent = String(error);
       }
     }
-    document.getElementById("startBtn").addEventListener("click", async () => { await controlPost("/api/start"); await refresh(); });
-    document.getElementById("stopBtn").addEventListener("click", async () => { await controlPost("/api/stop"); await refresh(); });
-    document.getElementById("restartBtn").addEventListener("click", async () => { await controlPost("/api/restart"); await refresh(); });
+    async function runWithPending(work) {
+      if (pending) {
+        return;
+      }
+      pending = true;
+      try {
+        await work();
+      } finally {
+        pending = false;
+        await refresh();
+      }
+    }
+    document.getElementById("dashletSelect").addEventListener("change", async (event) => {
+      const dashletId = event.target.value;
+      await runWithPending(async () => {
+        await controlPostJson("/api/select", { dashletId });
+      });
+    });
+    document.getElementById("startBtn").addEventListener("click", async () => {
+      await runWithPending(async () => {
+        await controlPost("/api/start");
+      });
+    });
+    document.getElementById("stopBtn").addEventListener("click", async () => {
+      await runWithPending(async () => {
+        await controlPost("/api/stop");
+      });
+    });
+    document.getElementById("restartBtn").addEventListener("click", async () => {
+      await runWithPending(async () => {
+        await controlPost("/api/restart");
+      });
+    });
     setInterval(refresh, 1500);
     refresh();
   </script>
@@ -187,10 +291,11 @@ export function renderCanvasPage(controlToken) {
 }
 
 export function createControlApiHandler({
-    runtime,
-    proxy,
     getStatusPayload,
-    refreshToolsFromOpenApi,
+    setSelectedDashlet,
+    startSelectedDashlet,
+    stopDashlet,
+    restartDashlet,
     expectedHost,
     expectedOrigin,
     controlToken,
@@ -238,8 +343,7 @@ export function createControlApiHandler({
                 return;
             }
             try {
-                await runtime.start();
-                await refreshToolsFromOpenApi();
+                await startSelectedDashlet();
                 jsonResponse(res, 200, getStatusPayload());
             } catch (error) {
                 const message = error instanceof Error ? error.message : "Start failed";
@@ -253,8 +357,7 @@ export function createControlApiHandler({
                 rejectInvalidMethod(res, "POST");
                 return;
             }
-            await runtime.stop();
-            proxy.clear();
+            await stopDashlet();
             jsonResponse(res, 200, getStatusPayload());
             return;
         }
@@ -265,12 +368,39 @@ export function createControlApiHandler({
                 return;
             }
             try {
-                await runtime.restart();
-                await refreshToolsFromOpenApi();
+                await restartDashlet();
                 jsonResponse(res, 200, getStatusPayload());
             } catch (error) {
                 const message = error instanceof Error ? error.message : "Restart failed";
                 jsonResponse(res, 500, { error: message });
+            }
+            return;
+        }
+
+        if (pathname === "/api/select") {
+            if (req.method !== "POST") {
+                rejectInvalidMethod(res, "POST");
+                return;
+            }
+            try {
+                const body = await readJsonBody(req);
+                const allowedKeys = ["dashletId"];
+                for (const key of Object.keys(body)) {
+                    if (!allowedKeys.includes(key)) {
+                        jsonResponse(res, 400, { error: `Unknown field "${key}"` });
+                        return;
+                    }
+                }
+                if (typeof body.dashletId !== "string" || body.dashletId.length === 0) {
+                    jsonResponse(res, 400, { error: "dashletId is required" });
+                    return;
+                }
+                await setSelectedDashlet(body.dashletId);
+                jsonResponse(res, 200, getStatusPayload());
+            } catch (error) {
+                const message = error instanceof Error ? error.message : "Select failed";
+                const statusCode = /progress/.test(message) ? 409 : 400;
+                jsonResponse(res, statusCode, { error: message });
             }
             return;
         }

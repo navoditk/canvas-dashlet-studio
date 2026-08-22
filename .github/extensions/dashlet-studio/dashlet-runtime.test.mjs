@@ -67,3 +67,71 @@ test("DashletRuntime serializes concurrent start calls", async () => {
 
     await runtime.stop();
 });
+
+test("DashletRuntime starts configured module target", async () => {
+    let spawnCommand = null;
+    let spawnArgs = null;
+    const fakeChild = new EventEmitter();
+    fakeChild.pid = 53535;
+    fakeChild.exitCode = null;
+    fakeChild.signalCode = null;
+    fakeChild.stdout = new EventEmitter();
+    fakeChild.stderr = new EventEmitter();
+    fakeChild.kill = () => {
+        fakeChild.exitCode = 0;
+        fakeChild.emit("exit", 0, null);
+    };
+
+    const runtime = new DashletRuntime({
+        spawnFn: (command, args) => {
+            spawnCommand = command;
+            spawnArgs = args;
+            return fakeChild;
+        },
+    });
+    runtime.waitForHealthy = async () => {};
+
+    await runtime.start({
+        moduleTarget: "dashlets.treasury_curve_dashlet:app",
+        dashletId: "treasury-curve",
+    });
+    assert.equal(spawnCommand, "uv");
+    assert.equal(spawnArgs[2], "dashlets.treasury_curve_dashlet:app");
+    assert.equal(runtime.getState().moduleTarget, "dashlets.treasury_curve_dashlet:app");
+    assert.equal(runtime.getState().activeDashletId, "treasury-curve");
+
+    await runtime.stop();
+});
+
+test("DashletRuntime restart respawns process and clears old pid", async () => {
+    const children = [];
+    const runtime = new DashletRuntime({
+        spawnFn: () => {
+            const child = new EventEmitter();
+            child.pid = 60000 + children.length;
+            child.exitCode = null;
+            child.signalCode = null;
+            child.stdout = new EventEmitter();
+            child.stderr = new EventEmitter();
+            child.kill = () => {
+                child.exitCode = 0;
+                child.emit("exit", 0, null);
+            };
+            children.push(child);
+            return child;
+        },
+    });
+    runtime.waitForHealthy = async () => {};
+
+    await runtime.start({ moduleTarget: "dashlets.hello_dashlet:app", dashletId: "hello" });
+    const firstPid = runtime.getState().pid;
+    await runtime.restart({ moduleTarget: "dashlets.treasury_curve_dashlet:app", dashletId: "treasury-curve" });
+    const secondPid = runtime.getState().pid;
+
+    assert.notEqual(firstPid, secondPid);
+    assert.equal(runtime.getState().moduleTarget, "dashlets.treasury_curve_dashlet:app");
+    assert.equal(children.length, 2);
+    assert.equal(children[0].exitCode, 0);
+
+    await runtime.stop();
+});

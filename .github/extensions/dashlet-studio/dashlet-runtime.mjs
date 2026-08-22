@@ -114,6 +114,7 @@ function buildChildEnv(parentEnv = process.env) {
 export class DashletRuntime {
     constructor(options = {}) {
         this.cwd = options.cwd ?? process.cwd();
+        this.defaultModuleTarget = options.defaultModuleTarget ?? "dashlets.hello_dashlet:app";
         this.startupTimeoutMs = options.startupTimeoutMs ?? 20_000;
         this.healthTimeoutMs = options.healthTimeoutMs ?? 1_500;
         this.requestTimeoutMs = options.requestTimeoutMs ?? 5_000;
@@ -126,6 +127,8 @@ export class DashletRuntime {
         this.sessionLog = options.sessionLog;
         this.spawnFn = options.spawnFn ?? spawn;
         this.startPromise = null;
+        this.moduleTarget = null;
+        this.activeDashletId = null;
     }
 
     addDiagnostic(level, message) {
@@ -156,6 +159,8 @@ export class DashletRuntime {
             port: this.port,
             pid: this.child?.pid ?? null,
             dashletUrl: this.getBaseUrl(),
+            moduleTarget: this.moduleTarget,
+            activeDashletId: this.activeDashletId,
             lastError: this.lastError,
             restarts: this.restarts,
             diagnostics: [...this.diagnostics],
@@ -205,6 +210,8 @@ export class DashletRuntime {
             this.addDiagnostic(code === 0 ? "info" : "error", detail);
             this.child = null;
             this.port = null;
+            this.moduleTarget = null;
+            this.activeDashletId = null;
             if (this.status !== "stopping" && this.status !== "idle") {
                 this.status = "error";
                 this.lastError = detail;
@@ -214,8 +221,15 @@ export class DashletRuntime {
         });
     }
 
-    async start() {
+    async start({ moduleTarget, dashletId } = {}) {
+        const resolvedModuleTarget = moduleTarget ?? this.defaultModuleTarget;
+        if (typeof resolvedModuleTarget !== "string" || resolvedModuleTarget.length === 0) {
+            throw new Error("Dashlet module target must be a non-empty string");
+        }
         if (this.child && this.status === "running") {
+            if (this.moduleTarget !== resolvedModuleTarget) {
+                throw new Error(`Dashlet runtime already running with module "${this.moduleTarget}"`);
+            }
             return this.getState();
         }
         if (this.startPromise) {
@@ -229,14 +243,14 @@ export class DashletRuntime {
             const args = [
                 "run",
                 "uvicorn",
-                "dashlets.hello_dashlet:app",
+                resolvedModuleTarget,
                 "--host",
                 "127.0.0.1",
                 "--port",
                 String(this.port),
             ];
 
-            await this.log(`Starting dashlet with: uv ${args.join(" ")}`);
+            await this.log(`Starting dashlet (${dashletId ?? "unknown"}) with: uv ${args.join(" ")}`);
 
             const child = this.spawnFn("uv", args, {
                 cwd: this.cwd,
@@ -246,6 +260,8 @@ export class DashletRuntime {
                 env: buildChildEnv(),
             });
             this.child = child;
+            this.moduleTarget = resolvedModuleTarget;
+            this.activeDashletId = typeof dashletId === "string" && dashletId.length > 0 ? dashletId : null;
             this.attachProcessLogs(child);
 
             try {
@@ -283,16 +299,18 @@ export class DashletRuntime {
         await killProcessTree(child);
         this.child = null;
         this.port = null;
+        this.moduleTarget = null;
+        this.activeDashletId = null;
         this.status = "idle";
         await this.log("Dashlet stopped");
         return this.getState();
     }
 
-    async restart() {
+    async restart({ moduleTarget, dashletId } = {}) {
         this.restarts += 1;
         await this.log("Restart requested");
         await this.stop();
-        return this.start();
+        return this.start({ moduleTarget, dashletId });
     }
 
     async fetchOpenApi() {
