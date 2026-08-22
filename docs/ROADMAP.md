@@ -11,6 +11,8 @@ Assumption: 4–5 focused hours per day. Complete the installation guide before 
 
 Do not complete long courses before starting. Read only the sections required for the next implementation block.
 
+See [`docs/REFERENCES.md`](REFERENCES.md) for verified links to every technology referenced in this roadmap (Copilot App, Canvas extensions, FastAPI, Pydantic, OpenAPI, Alpine.js, Tailwind CSS, Plotly.js, `uv`, Treasury data, Pytest, GitHub Actions, and more), organized so you can jump to just what the current day's block needs.
+
 ## Day 1 — Understand and manually build the artifact
 
 ### Milestone
