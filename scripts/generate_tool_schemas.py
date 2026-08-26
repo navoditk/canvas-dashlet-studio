@@ -27,11 +27,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from dashlet_framework import AGENT_TOOL_TAG
 
 # Keep in sync with DASHLET_REGISTRY's `module` values in
-# .github/extensions/dashlet-studio/extension.mjs.
+# .github/extensions/dashlet-studio/dashlet-registry.mjs.
 DASHLET_MODULES: list[str] = [
     "dashlets.hello_dashlet:app",
     "dashlets.treasury_curve_dashlet:app",
     "dashlets.portfolio_exposure_dashlet:app",
+    "dashlets.portfolio_scenario_dashlet:app",
 ]
 
 OUTPUT_PATH = (
