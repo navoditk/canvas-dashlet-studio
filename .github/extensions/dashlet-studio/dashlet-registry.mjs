@@ -28,6 +28,16 @@ export const DASHLET_REGISTRY = Object.freeze({
             "compare_portfolio_exposures",
         ]),
     }),
+    "portfolio-scenario": Object.freeze({
+        id: "portfolio-scenario",
+        displayName: "Portfolio Scenario Impact",
+        module: "dashlets.portfolio_scenario_dashlet:app",
+        approvedTools: Object.freeze([
+            "run_portfolio_scenario",
+            "get_scenario_contributions",
+            "compare_scenario_impacts",
+        ]),
+    }),
 });
 
 export const REGISTERED_TOOL_IDS = [
@@ -42,4 +52,7 @@ export const TOOL_DESCRIPTIONS = Object.freeze({
     get_portfolio_exposures: "Get deterministic long/short/net portfolio exposure by sector and issuer for one observation date.",
     get_top_concentrations: "Get the top issuer and sector concentrations by absolute net exposure weight for one observation date.",
     compare_portfolio_exposures: "Compare sector-level net portfolio exposure between two observation dates and return the deltas.",
+    run_portfolio_scenario: "Apply a bounded rate/spread/equity shock to one observation date's portfolio and return deterministic total, position-level and sector-level impact.",
+    get_scenario_contributions: "Apply a bounded rate/spread/equity shock and return the top position-level impact contributions plus per-sector contributions.",
+    compare_scenario_impacts: "Compare two independent bounded rate/spread/equity shock scenarios on the same portfolio and return each scenario's totals plus per-sector impact deltas.",
 });

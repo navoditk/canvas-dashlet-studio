@@ -11,25 +11,25 @@ Update this file at the end of each implementation block. Mark an item complete 
 
 ## Current status
 
-- **Overall milestone status:** the Treasury Curve reference dashlet is complete through Milestone 3. CI, the shared `dashlet_framework` package, generic OpenAPI-derived tool schemas, and reusable contract validation (originally Resume-here tasks 1–4) are done. Milestone 4's durable-instruction prerequisites are done, and Portfolio Exposure & Concentration (task 5) is now also done, pending independent review (see Milestone 4 evidence above). Remaining Milestone 4 work: Portfolio Scenario Impact, Issuer Research.
+- **Overall milestone status:** the Treasury Curve reference dashlet is complete through Milestone 3. CI, the shared `dashlet_framework` package, generic OpenAPI-derived tool schemas, and reusable contract validation (originally Resume-here tasks 1–4) are done. Milestone 4's durable-instruction prerequisites are done. Portfolio Exposure & Concentration (task 5) and Portfolio Scenario Impact (task 6) are both done, pending independent review (see Milestone 4 evidence above). Remaining Milestone 4 work: Issuer Research.
 - **Latest validation date:** 2026-08-26.
-- **What works today:** Hello, Treasury Curve and Portfolio Exposure all run under the Dashlet Studio Canvas extension, built on a shared `dashlet_framework` package (`create_dashlet_app`, `AGENT_TOOL_TAG`, `Provenance`, `DashletErrorDetail`/`DashletErrorResponse`) instead of duplicated per-dashlet boilerplate; every dashlet exposes `/health` and `/metadata`. A user can switch between any of the three, view it in the iframe, and ask Copilot to invoke its approved agent tools. Treasury exposes `get_treasury_curve`, `get_treasury_curve_slopes` and `compare_treasury_curves` with an explicit fixture/EOD `data_mode`. Portfolio Exposure exposes `get_portfolio_exposures`, `get_top_concentrations` and `compare_portfolio_exposures` from deterministic mock positions (fixture-only, no live mode). Agent-tool parameter schemas are generated from each dashlet's real `app.openapi()` output by `scripts/generate_tool_schemas.py`; CI fails if the committed generated file drifts from source. Reusable contract validation (`tests/test_dashlet_contract.py`, `dashlet-registry.test.mjs`) checks every registered dashlet automatically. A GitHub Actions workflow (`.github/workflows/ci.yml`) runs Ruff, Pytest, the schema-drift check and `npm test` on every push/PR.
+- **What works today:** Hello, Treasury Curve, Portfolio Exposure and Portfolio Scenario Impact all run under the Dashlet Studio Canvas extension, built on a shared `dashlet_framework` package (`create_dashlet_app`, `AGENT_TOOL_TAG`, `Provenance`, `DashletErrorDetail`/`DashletErrorResponse`) instead of duplicated per-dashlet boilerplate; every dashlet exposes `/health` and `/metadata`. A user can switch between any of the four, view it in the iframe, and ask Copilot to invoke its approved agent tools. Treasury exposes `get_treasury_curve`, `get_treasury_curve_slopes` and `compare_treasury_curves` with an explicit fixture/EOD `data_mode`. Portfolio Exposure exposes `get_portfolio_exposures`, `get_top_concentrations` and `compare_portfolio_exposures` from deterministic mock positions (fixture-only, no live mode). Portfolio Scenario Impact exposes `run_portfolio_scenario`, `get_scenario_contributions` and `compare_scenario_impacts` — deterministic rate/spread/equity shock impact on the *same* mock positions (`portfolio_fixture.Position` extended with optional `duration`/`spread_duration`/`beta`, reusing `FixturePortfolioProvider` directly rather than duplicating fixture-loading logic). Agent-tool parameter schemas are generated from each dashlet's real `app.openapi()` output by `scripts/generate_tool_schemas.py`; CI fails if the committed generated file drifts from source. Reusable contract validation (`tests/test_dashlet_contract.py`, `dashlet-registry.test.mjs`) checks every registered dashlet automatically — Portfolio Scenario Impact needed zero new contract-test code. A GitHub Actions workflow (`.github/workflows/ci.yml`) runs Ruff, Pytest, the schema-drift check and `npm test` on every push/PR.
 
 ## Resume here
 
-The next developer should start with **Task 6** below before anything else in this repository.
+The next developer should start with **Task 7** below before anything else in this repository.
 
-Two items from task 5 remain deliberately open, not accidentally dropped: (1) an independent review pass of the Portfolio Exposure dashlet (see Milestone 4 evidence above), and (2) live-Canvas evidence for Portfolio Exposure (agent-tool invocation logs, tool-isolation checks, process-lifecycle checks, a Canvas-embedded screenshot — see `docs/evidence/portfolio-exposure-reference.md`). Both were explicitly deprioritized on 2026-08-26 to keep moving on Milestone 4's remaining business use cases rather than block on them; direct-FastAPI verification, the full automated test suite, and a real cross-verified browser screenshot already exist for Portfolio Exposure, so this is not "unverified," just "not yet verified inside an actual Canvas session." Revisit both once Portfolio Scenario Impact (or later) makes it worth doing a combined live-Canvas pass across multiple dashlets at once.
+Four items remain deliberately open, not accidentally dropped: (1) independent review passes for Portfolio Exposure and Portfolio Scenario Impact (see Milestone 4 evidence above), and (2) live-Canvas evidence for both (agent-tool invocation logs, tool-isolation checks, process-lifecycle checks, Canvas-embedded screenshots — see `docs/evidence/portfolio-exposure-reference.md` and `docs/evidence/portfolio-scenario-reference.md`). Both kinds of gap were explicitly deprioritized on 2026-08-26 to keep moving on Milestone 4's remaining business use cases rather than block on them; direct-FastAPI verification and the full automated test suite already exist for both dashlets (plus a real cross-verified browser screenshot for Portfolio Exposure), so this is not "unverified," just "not yet verified inside an actual Canvas session." With two dashlets now sharing this gap, doing one combined live-Canvas evidence pass across both (plus Treasury, to refresh it) is more efficient than two separate passes — a good candidate for the next dedicated session.
 
-**Recommended branch:** `feature/portfolio-scenario-impact`
+**Recommended branch:** `feature/issuer-research`
 
 1. ~~Add GitHub Actions for Ruff, Pytest and Node tests.~~ Done — see `.github/workflows/ci.yml`.
 2. ~~Add reusable dashlet/OpenAPI contract validation.~~ Done — see `tests/test_dashlet_contract.py` and `.github/extensions/dashlet-studio/dashlet-registry.test.mjs`. `DASHLET_REGISTRY`/`REGISTERED_TOOL_IDS`/`TOOL_DESCRIPTIONS` were extracted from `extension.mjs` into `dashlet-registry.mjs` so they're importable by tests without triggering `joinSession()`.
 3. ~~Extract the reusable framework from the repeated Hello and Treasury patterns.~~ Done — see `dashlet_framework/` (`app.py`, `models.py`).
 4. ~~Replace the Treasury-specific Canvas schema bridge (`treasury-tool-schemas.mjs`) with generic approved OpenAPI-to-capability schema generation.~~ Done — see `scripts/generate_tool_schemas.py` and `.github/extensions/dashlet-studio/generated-tool-schemas.mjs`.
 5. ~~Build Portfolio Exposure and Concentration using the framework.~~ Done — see `dashlets/portfolio_exposure_dashlet.py`, `dashlets/portfolio_provider.py`, `portfolio_fixture.py`. Independent review still open (Milestone 4 evidence above).
-6. **Build Portfolio Scenario Impact using the framework** (next).
-7. Add Issuer Research as a later use case.
+6. ~~Build Portfolio Scenario Impact using the framework.~~ Done — see `dashlets/portfolio_scenario_dashlet.py`, `dashlets/scenario_provider.py`, `scenario_fixture.py`. Independent review still open (Milestone 4 evidence above).
+7. **Add Issuer Research as a later use case** (next).
 8. Build and publish the FastAPI gallery.
 9. Add stronger governance, sandboxing, identity, observability and evaluations later.
 
@@ -51,7 +51,9 @@ Two items from task 5 remain deliberately open, not accidentally dropped: (1) an
 - [x] Test and security-review checkpoints for this milestone (see Evidence below).
 - [x] Shared `dashlet_framework` package and reusable dashlet/OpenAPI contract validation.
 - [x] Canonical `AGENTS.md` and detailed contract docs (Milestone 4 durable-instruction prerequisites).
-- [ ] Portfolio Exposure, Portfolio Scenario Impact, Issuer Research (Milestone 4 — not started).
+- [x] Portfolio Exposure & Concentration dashlet (independent review still open).
+- [x] Portfolio Scenario Impact dashlet (independent review still open).
+- [ ] Issuer Research (Milestone 4 — not started).
 - [x] CI (`.github/workflows/ci.yml`).
 - [ ] Gallery publication (Milestone 5 — not started).
 
@@ -63,20 +65,26 @@ Two items from task 5 remain deliberately open, not accidentally dropped: (1) an
 - Relevant architecture sections: [`docs/ARCHITECTURE.md`](ARCHITECTURE.md) §4 "Interactive data flow", §5 "Agent-tool flow".
 - Commits: `5546e38`, `8dfd497`, `fb7085f`, `ed78a6c`, `5b0bcf7`, `1286475` (all on `navoditk-treasury-curve-reference` / `navoditk-automatic-lamp`; not yet merged to `main`). Pull request: to be opened per this session's task (see report).
 - [`docs/evidence/portfolio-exposure-reference.md`](evidence/portfolio-exposure-reference.md) — direct-FastAPI verification, fixture-mode results, provenance examples, test summaries, and a real-browser screenshot (every displayed value cross-checked against the live API and matching exactly) are complete. Canvas-specific evidence (agent-tool invocation logs, tool-isolation negative tests, process-lifecycle results, Canvas-embedded screenshot) is still TODO — no live Copilot Canvas session was available. Commits: `da18bce`, `7a15fb9`, and the standalone-screenshot follow-up.
+- [`docs/evidence/portfolio-scenario-reference.md`](evidence/portfolio-scenario-reference.md) — direct-FastAPI verification (including a hand-checked value: TechCore Inc, beta 1.3 * $2.4M * 10% equity shock = $312,000), the full test suite (164 pytest, 43 npm), and the `-$174,500` net-DV01 cross-check against an earlier FICC walkthrough are complete. Canvas-specific evidence is TODO, same reasoning as Portfolio Exposure. Commits: `79524ed`, `400bcd6`, `f106a36`, `031877f`, and the Canvas-registration/docs follow-up.
 
 ## Known limitations
 
-- Only Hello and Treasury Curve dashlets are currently implemented; Portfolio Exposure, Portfolio Scenario Impact and Issuer Research are not yet built.
+*(This section historically went stale relative to `## Current status` above — as of 2026-08-26 it's been reconciled with actual repository state. Keep both in sync going forward.)*
+
+- Hello, Treasury Curve, Portfolio Exposure and Portfolio Scenario Impact are implemented; Issuer Research is not yet built.
 - Treasury EOD data is official end-of-day data from Treasury.gov, **not** intraday real-time market data.
-- Capability input schemas for the three Treasury tools are a Milestone-2 compatibility bridge (`treasury-tool-schemas.mjs`) — a manually maintained per-operation map, not yet derived generically from OpenAPI.
-- Generic OpenAPI-derived capability registration (replacing the bridge above) remains future work — see Resume-here Task 4.
-- Response validation is still operation-specific rather than fully OpenAPI-schema-driven.
+- Neither Portfolio Exposure nor Portfolio Scenario Impact has a live data mode — both are fixture-only by design (see `docs/DATA_ACCESS.md` §2), not a gap to close later.
+- Portfolio Scenario Impact's rate and spread shocks show $0 impact on the current fixture data (an all-equity book, no fixed-income holdings) — intentional and directly tested, not a defect.
+- Response validation is still operation-specific rather than fully OpenAPI-schema-driven; the generic tool-schema generator also doesn't carry numeric `ge`/`le` bounds (e.g. `top_n`) into the Copilot-visible schema, though FastAPI still enforces them server-side with a 422.
 - No production sandbox — the MVP relies on a registry allowlist, `shell:false` spawning and restricted child-process environment, not process/network isolation.
 - No persistent artifact store (draft/published lifecycle, versioning, cloning) exists yet.
 - No production identity/authorization model exists; the Canvas control API uses a per-session control token only.
 - No hosted gallery exists yet; all verification has been against locally spawned Uvicorn processes.
-- **No CI exists yet** — `.github/workflows/` is empty. This is the top-priority Resume-here task.
-- The Canvas `ToolProxy`'s existing 5-second request timeout can be exceeded by live Treasury.gov EOD fetches (observed 8–19s in this session); this surfaces as an aborted agent-tool call rather than a wrong answer, and is a pre-existing, unmodified setting — see `docs/evidence/treasury-reference.md` for detail.
+- No secret scanning exists in CI (Ruff/Pytest/schema-check/npm test do) — see `docs/ARCHITECTURE.md` §10 and Milestone 5 below.
+- Only one dashlet process runs at a time; there is no concurrent multi-dashlet or cross-dashlet composition view.
+- Dashlet registration (`DASHLET_REGISTRY` in `dashlet-registry.mjs`) is manual; there is no auto-discovery yet.
+- Live-Canvas evidence (agent-tool invocation logs, tool-isolation checks, process-lifecycle checks, Canvas-embedded screenshots) and independent code review are deliberately deferred for Portfolio Exposure and Portfolio Scenario Impact — see `## Resume here` above.
+- The Canvas `ToolProxy`'s existing 5-second request timeout can be exceeded by live Treasury.gov EOD fetches (observed 8–19s in one session); this surfaces as an aborted agent-tool call rather than a wrong answer, and is a pre-existing, unmodified setting — see `docs/evidence/treasury-reference.md` for detail.
 
 ## Environment
 
@@ -220,11 +228,11 @@ timeout setting, not a fixture-fallback defect).
 - [x] Creation workflow/skill created.
 - [x] Review workflow/skill created.
 - [x] Portfolio Exposure generated using framework.
-- [ ] Portfolio Scenario Impact generated using framework.
+- [x] Portfolio Scenario Impact generated using framework.
 - [ ] Issuer Research generated or recorded as the first post-sprint extension.
-- [x] Every completed business use case (Treasury, Portfolio Exposure) has at least one verified agent tool.
-- [!] Independent reviews completed. Portfolio Exposure was implemented by Claude Code in this session; per AGENTS.md §8 / AGENTIC_DEVELOPMENT.md §10 it still needs an independent review pass (a different agent or a human) before being considered fully done.
-- [x] No application-specific framework changes were required for Portfolio Exposure (`dashlet_framework` used unchanged; only dashlet-specific `portfolio_fixture.py`/`portfolio_provider.py` were added, mirroring the existing Treasury pattern).
+- [x] Every completed business use case (Treasury, Portfolio Exposure, Portfolio Scenario Impact) has at least one verified agent tool.
+- [!] Independent reviews completed. Portfolio Exposure and Portfolio Scenario Impact were both implemented by Claude Code in this session; per AGENTS.md §8 / AGENTIC_DEVELOPMENT.md §10 both still need an independent review pass (a different agent or a human) before being considered fully done.
+- [x] No application-specific framework changes were required for Portfolio Exposure or Portfolio Scenario Impact (`dashlet_framework` used unchanged both times; only dashlet-specific modules were added, mirroring the existing Treasury pattern). Portfolio Scenario Impact did extend `portfolio_fixture.Position` with optional sensitivity fields — an *application*-level extension by explicit user decision, not a framework change.
 
 Evidence (durable instructions):
 
@@ -282,6 +290,54 @@ assertions on the exact embedded HTML/JS content. The generic OpenAPI-to-tool-sc
 does not carry over numeric ge/le bounds (top_n is 1-20 server-side in FastAPI, exposed to
 Copilot as an unbounded integer) -- FastAPI still enforces the real bound with a 422, so this
 is a minor schema-precision gap, not a safety gap.
+```
+
+Evidence (Portfolio Scenario Impact):
+
+```text
+Date: 2026-08-26
+Generation prompt: user asked to proceed to Portfolio Scenario Impact with detailed outline
+and prompting at each decision point, plus doc updates; agent presented the spec-derived design
+(run/contributions/compare endpoints, bounded rate/spread/equity shocks, deterministic linear
+impact calculation) and asked two explicit design questions before writing code -- reuse
+Portfolio Exposure's positions vs. an independent fixture, and what "comparison" means for this
+dashlet (two dates vs. two shock scenarios). User chose "extend existing positions" and "two
+shock scenarios" for both.
+Implementing agent: Claude Code (this session), same contract docs as Portfolio Exposure.
+Files added/changed: portfolio_fixture.py (Position extended with optional duration/
+spread_duration/beta, default 0.0 -- purely additive, verified not to change any existing
+Portfolio Exposure test or hardcoded total); fixtures/portfolio/positions_2026-08-{18,19}.json
+(added per-position beta values, sector-level: Technology 1.3, Financials 1.1, Healthcare 0.7,
+Energy 1.4, Industrials 1.0; duration/spread_duration left at 0.0 -- an all-equity book, no
+fixed-income holdings, so rate/spread shocks correctly show $0 impact, asserted directly by a
+test rather than left as an unexamined assumption); scenario_fixture.py (ScenarioShock,
+PositionImpact, SectorContribution, ScenarioTotals, and the pure calculation functions);
+dashlets/scenario_provider.py (ScenarioImpactProvider, reusing FixturePortfolioProvider
+directly rather than duplicating fixture-loading logic); dashlets/portfolio_scenario_dashlet.py
+(run_portfolio_scenario, get_scenario_contributions, compare_scenario_impacts, all tagged
+agent-tool; /metadata; embedded Alpine/Plotly UI with Run and Compare actions); 45 new tests
+across tests/test_portfolio_fixture.py (+4), tests/test_scenario_fixture.py (13, new),
+tests/test_scenario_provider.py (8, new), tests/test_portfolio_scenario_dashlet.py (24, new);
+registered in .github/extensions/dashlet-studio/dashlet-registry.mjs; tool schemas regenerated
+and verified against a real uvicorn process boot.
+Correctness cross-checks: two tests in tests/test_scenario_fixture.py directly reuse the exact
+$10M/duration-8.5 long 10Y and -$8M/duration-1.9 short 2Y example from an earlier FICC
+explanation given to the user, confirming the combined +25bp impact equals -$174,500, matching
+the net-DV01 P&L estimate stated in that conversation. tests/test_portfolio_scenario_dashlet.py
+independently confirms TechCore Inc's beta-1.3 equity-shock impact against a hand-calculated
+value (beta 1.3 * $2,400,000 * 10% = $312,000).
+Test command: uv run pytest -> 164 passed; npm test -> 43 passed; uv run python
+scripts/generate_tool_schemas.py --check -> OK; uv run ruff check . -> clean.
+Reviewing agents: not yet completed -- see Milestone 4 checklist "Independent reviews
+completed" above.
+PRs: committed directly to main in five small units (Position extension; calculation engine;
+provider; dashlet+tests; Canvas registration+docs), each independently green, matching the
+established pattern from the Portfolio Exposure and CI/framework work earlier in this session.
+Framework changes: none to dashlet_framework. portfolio_fixture.py (an application module, not
+the framework) was extended by explicit user decision -- see the design-decision note above.
+Known gaps: same as Portfolio Exposure -- no live Canvas/browser verification (no Chrome
+extension connected in this session), verified instead via a real uvicorn process boot, direct
+curl checks, and pytest assertions on the exact embedded HTML/JS content.
 ```
 
 ## Milestone 5 — CI and publication

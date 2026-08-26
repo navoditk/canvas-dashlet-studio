@@ -86,6 +86,42 @@ test("compare_portfolio_exposures requires base_date and compare_date, no data_m
     assert.ok(!Object.hasOwn(schema.properties, "data_mode"));
 });
 
+test("run_portfolio_scenario and get_scenario_contributions expose bounded, all-optional shock parameters", () => {
+    const run = AGENT_TOOL_PARAMETER_SCHEMAS.run_portfolio_scenario;
+    assert.deepEqual(Object.keys(run.properties).sort(), [
+        "date",
+        "equity_shock_pct",
+        "rate_shock_bps",
+        "spread_shock_bps",
+    ]);
+    assert.deepEqual(run.required, []); // every shock defaults to 0.0 -- a zero-shock request is valid
+
+    const contributions = AGENT_TOOL_PARAMETER_SCHEMAS.get_scenario_contributions;
+    assert.deepEqual(Object.keys(contributions.properties).sort(), [
+        "date",
+        "equity_shock_pct",
+        "rate_shock_bps",
+        "spread_shock_bps",
+        "top_n",
+    ]);
+    assert.equal(contributions.properties.top_n.type, "integer");
+});
+
+test("compare_scenario_impacts exposes two full independent shock specifications, no data_mode", () => {
+    const schema = AGENT_TOOL_PARAMETER_SCHEMAS.compare_scenario_impacts;
+    assert.deepEqual(Object.keys(schema.properties).sort(), [
+        "date",
+        "equity_pct_a",
+        "equity_pct_b",
+        "rate_bps_a",
+        "rate_bps_b",
+        "spread_bps_a",
+        "spread_bps_b",
+    ]);
+    assert.deepEqual(schema.required, []);
+    assert.ok(!Object.hasOwn(schema.properties, "data_mode"));
+});
+
 test("schema map and each schema's properties are frozen (immutable)", () => {
     assert.ok(Object.isFrozen(AGENT_TOOL_PARAMETER_SCHEMAS));
     for (const schema of Object.values(AGENT_TOOL_PARAMETER_SCHEMAS)) {

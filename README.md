@@ -2,7 +2,7 @@
 
 A GitHub Copilot Canvas extension and small Python/FastAPI runtime for building **dashlets**: single-file financial monitors that render in a Canvas iframe and expose the same typed operations to Copilot as agent tools.
 
-This repository currently ships three working dashlets — **Hello** (a smoke test), **Treasury Curve** (a reference application with fixture and official end-of-day data), and **Portfolio Exposure** (deterministic long/short/net exposure and concentration from mock positions) — plus the reusable pieces needed to run, extend and validate them.
+This repository currently ships four working dashlets — **Hello** (a smoke test), **Treasury Curve** (a reference application with fixture and official end-of-day data), **Portfolio Exposure** (deterministic long/short/net exposure and concentration from mock positions), and **Portfolio Scenario Impact** (deterministic rate/spread/equity shock analysis on the same mock positions) — plus the reusable pieces needed to run, extend and validate them.
 
 ## 1. What is a dashlet?
 
@@ -18,6 +18,7 @@ This remains an ordinary client-server web architecture — a browser-rendered i
 - Hello Dashlet: minimal end-to-end smoke test (`get_dashlet_summary` tool).
 - Treasury Curve dashlet: interactive yield curve, slopes and comparison views with explicit fixture/EOD data-mode selection.
 - Portfolio Exposure dashlet: deterministic long/short/net exposure by sector and issuer, top concentrations, and a sector-level snapshot comparison, from mock fixture positions (`get_portfolio_exposures`, `get_top_concentrations`, `compare_portfolio_exposures` tools).
+- Portfolio Scenario Impact dashlet: deterministic rate/spread/equity shock impact on the same mock positions — total/position/sector-level impact and a two-scenario comparison (`run_portfolio_scenario`, `get_scenario_contributions`, `compare_scenario_impacts` tools).
 - A shared `dashlet_framework/` package (`create_dashlet_app`, the `agent-tool` tag constant, `Provenance`, and error-response models) so every dashlet reuses the same `/health` implementation, error shapes and provenance model instead of duplicating them.
 - Agent-tool bridge: only FastAPI operations tagged `agent-tool` and present in the extension's allowlist become Copilot tools; tool arguments are validated before any provider call; tools are isolated per active dashlet. Tool parameter schemas are generated from each dashlet's real OpenAPI output (`scripts/generate_tool_schemas.py`), not hand-maintained.
 - Reusable dashlet/OpenAPI contract validation (`tests/test_dashlet_contract.py`, `.github/extensions/dashlet-studio/dashlet-registry.test.mjs`): every registered dashlet is checked automatically for required routes, agent-tool tagging correctness, unique operation IDs and mount-relative fetch paths, with no per-dashlet test code required.
@@ -44,7 +45,27 @@ The Portfolio Exposure dashlet (`dashlets/portfolio_exposure_dashlet.py`) is the
 
 Positions come from deterministic mock fixtures (`fixtures/portfolio/positions_*.json`) — 12 positions across 5 sectors, including two short positions. **There is no live holdings provider for this dashlet**: unlike Treasury's fixture/EOD split, Portfolio Exposure has only a fixture data mode, since PROPOSAL.md's use case is built from mock positions, not a real feed. See [`docs/DATA_ACCESS.md`](docs/DATA_ACCESS.md) §2 for why fixture-first development doesn't always grow a second, live mode.
 
-## 6. Architecture at a glance
+## 6. Portfolio Scenario Impact reference application
+
+The Portfolio Scenario Impact dashlet (`dashlets/portfolio_scenario_dashlet.py`) is the third business-use-case dashlet, and the second built on `dashlet_framework` without any framework changes. It applies bounded, deterministic multi-factor shocks to the **same** portfolio positions Portfolio Exposure reads (`portfolio_fixture.Position`, extended with optional `duration`, `spread_duration` and `beta` fields — one portfolio, multiple lenses, per an explicit design decision). Three agent-tool-tagged operations:
+
+- `run_portfolio_scenario` — apply a rate shock (bps, bounded ±300), spread shock (bps, bounded ±500) and/or equity shock (%, bounded ±50) and return total, position-level and sector-level impact.
+- `get_scenario_contributions` — the top position-level impact contributions (`top_n`, bounded 1–20) plus sector-level contributions, for the same shock.
+- `compare_scenario_impacts` — two full, independent shock specifications ("scenario A" vs. "scenario B") applied to the same portfolio, returning both totals and per-sector deltas.
+
+The calculation is a deterministic, linear first-order approximation, computed entirely in Python (never by the language model):
+
+```text
+position_impact = -duration        * market_value * (rate_shock_bps   / 10,000)
+                 + -spread_duration * market_value * (spread_shock_bps / 10,000)
+                 +  beta            * market_value * (equity_shock_pct / 100)
+```
+
+Rate and spread shocks flip sign (yields rising / spreads widening reduce the value of a long, positive-duration position — the same inverse price/yield relationship the Treasury dashlet's data represents); equity shocks move with beta in the same direction as the shock. Short positions (negative `market_value`) produce correctly-signed impact with no special-casing.
+
+**All 12 fixture positions currently have `duration = 0.0` and `spread_duration = 0.0`** — this is an all-equity book with no fixed-income holdings, so a rate or spread shock correctly shows **$0 impact** on it today. That's an intentional, tested property of the fixture data (`test_real_fixtures_have_sector_beta_and_zero_duration`), not a gap: the rate/spread math itself is thoroughly unit-tested against synthetic non-zero-duration positions in `tests/test_scenario_fixture.py`, independent of what the shipped fixture happens to contain.
+
+## 7. Architecture at a glance
 
 ```mermaid
 flowchart TB
@@ -58,7 +79,7 @@ flowchart TB
 
 The iframe and the Copilot agent both call the **same** FastAPI business operation — `fetch("./api/treasury/curve?...")` from the embedded JavaScript, and the identical `/api/treasury/curve` path via the Canvas tool proxy for the agent. This avoids duplicated business logic and keeps provenance identical for both consumers. See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the full component and data-flow diagrams.
 
-## 7. Technology stack
+## 8. Technology stack
 
 | Area | Choice |
 |---|---|
@@ -73,7 +94,7 @@ The iframe and the Copilot agent both call the **same** FastAPI business operati
 | CI | GitHub Actions (`.github/workflows/ci.yml`) — Ruff, Pytest, tool-schema drift check, `npm test` |
 | Dependency management | `uv` (Python), `npm` (Node) |
 
-## 8. Quick start
+## 9. Quick start
 
 Install prerequisites per [`INSTALL.md`](INSTALL.md), then from the repository root:
 
@@ -86,15 +107,17 @@ Run a dashlet directly (outside Canvas), for browser or `curl` testing:
 ```bash
 uv run uvicorn dashlets.treasury_curve_dashlet:app --host 127.0.0.1 --port 8765
 # or: uv run uvicorn dashlets.portfolio_exposure_dashlet:app --host 127.0.0.1 --port 8765
+# or: uv run uvicorn dashlets.portfolio_scenario_dashlet:app --host 127.0.0.1 --port 8765
 ```
 
 ```bash
 curl "http://127.0.0.1:8765/health"
 curl "http://127.0.0.1:8765/api/treasury/curve?data_mode=fixture"
-curl "http://127.0.0.1:8765/api/portfolio/exposures"   # if running the Portfolio Exposure dashlet
+curl "http://127.0.0.1:8765/api/portfolio/exposures"                     # Portfolio Exposure dashlet
+curl "http://127.0.0.1:8765/api/scenario/run?equity_shock_pct=10"        # Portfolio Scenario Impact dashlet
 ```
 
-## 9. Running tests
+## 10. Running tests
 
 ```bash
 uv run ruff check .
@@ -109,15 +132,15 @@ npm test
 
 All four commands run in CI (`.github/workflows/ci.yml`) on every push and pull request. `docs/evidence/treasury-reference.md` has a historical snapshot of these commands from the Treasury milestone, including a small number of then-pre-existing failures that were called out explicitly and have since been fixed.
 
-## 10. Opening Dashlet Studio Canvas
+## 11. Opening Dashlet Studio Canvas
 
-From a Copilot session with this repository open, invoke the `dashlet-studio` Canvas extension. It exposes actions to select a dashlet (`hello`, `treasury-curve`, or `portfolio-exposure`), start it, view runtime diagnostics, restart it, and stop it. Only one dashlet process runs at a time; switching dashlets stops the previous process before starting the next.
+From a Copilot session with this repository open, invoke the `dashlet-studio` Canvas extension. It exposes actions to select a dashlet (`hello`, `treasury-curve`, `portfolio-exposure`, or `portfolio-scenario`), start it, view runtime diagnostics, restart it, and stop it. Only one dashlet process runs at a time; switching dashlets stops the previous process before starting the next.
 
-## 11. Using Treasury through the iframe
+## 12. Using Treasury through the iframe
 
 Once the Treasury Curve dashlet is running and displayed in the Canvas iframe, use the on-page controls to choose an observation date and a Data Mode (`fixture` or `eod`). The curve, slope cards, and (when both a base and compare date are selected) the comparison table update together, along with the provenance line showing source, observation date and data mode.
 
-## 12. Using Treasury as an agent tool
+## 13. Using Treasury as an agent tool
 
 While the Treasury Curve dashlet is active, ask Copilot a data question, for example:
 
@@ -125,16 +148,16 @@ While the Treasury Curve dashlet is active, ask Copilot a data question, for exa
 
 Copilot selects the matching approved tool (`get_treasury_curve`, `get_treasury_curve_slopes`, or `compare_treasury_curves`), the Canvas tool proxy validates the arguments against an explicit JSON schema (including the required `data_mode` enum), forwards the request to the same FastAPI endpoint the iframe uses, and returns the validated, provenance-tagged response.
 
-## 13. Fixture versus EOD modes (Treasury only)
+## 14. Fixture versus EOD modes (Treasury only)
 
 Every Treasury operation requires an explicit `data_mode`:
 
 - `fixture` — deterministic, recorded sample data. Safe for demos, tests and CI; no network calls.
 - `eod` — official end-of-day yield data fetched live from Treasury.gov.
 
-`data_mode` has no default value: omitting it, or passing an unsupported value, is rejected before any provider is invoked (HTTP 422 from FastAPI, or a client-side rejection in the Canvas tool proxy). An EOD request failure is never silently served from fixture data. Portfolio Exposure has no `data_mode` parameter — see §5.
+`data_mode` has no default value: omitting it, or passing an unsupported value, is rejected before any provider is invoked (HTTP 422 from FastAPI, or a client-side rejection in the Canvas tool proxy). An EOD request failure is never silently served from fixture data. Neither Portfolio Exposure nor Portfolio Scenario Impact has a `data_mode` parameter — see §5–6.
 
-## 14. Using Portfolio Exposure
+## 15. Using Portfolio Exposure
 
 Once the Portfolio Exposure dashlet is active in the Canvas iframe, choose an observation date and click **Load** to see the sector net-exposure chart, long/short/net totals, and the top issuer concentrations table. Select a comparison date and click **Compare** to see sector-level exposure deltas.
 
@@ -144,22 +167,34 @@ As an agent tool, ask Copilot, for example:
 
 Copilot selects `get_top_concentrations`, validates `top_n` and `date` against the generated schema, forwards the request to `/api/portfolio/concentration`, and returns the same ranked, provenance-tagged response the iframe table shows.
 
-## 15. Evidence and screenshots
+## 16. Using Portfolio Scenario Impact
+
+Once the Portfolio Scenario Impact dashlet is active in the Canvas iframe, choose an observation date, enter a rate shock (bps), spread shock (bps) and/or equity shock (%), and click **Run Scenario** to see the sector impact-contribution chart, rate/spread/equity/total impact totals, and the top position impacts table. Enter a second shock (Scenario A/B) and click **Compare** to see per-sector impact deltas between the two scenarios.
+
+As an agent tool, ask Copilot, for example:
+
+> Use the scenario tool to shock equities down 10% and show me the impact.
+
+Copilot selects `run_portfolio_scenario`, validates `equity_shock_pct` (and the omitted `rate_shock_bps`/`spread_shock_bps`, defaulting to 0) against the generated schema — rejecting any shock outside its bound before the provider is ever called — forwards the request to `/api/scenario/run`, and returns the same deterministic, provenance-tagged impact the iframe shows.
+
+## 17. Evidence and screenshots
 
 See [`docs/evidence/treasury-reference.md`](docs/evidence/treasury-reference.md) for the full validation record: direct FastAPI checks, live Canvas agent-tool invocations, tool-isolation negative tests, process-lifecycle results, and Python/Node test summaries.
 
 ![Treasury Curve Monitor in EOD mode](docs/evidence/images/treasury-canvas-eod.png)
 
-A genuine Canvas screenshot (EOD mode) is included above; see [`docs/evidence/treasury-reference.md`](docs/evidence/treasury-reference.md#screenshot) for capture details and provenance. Portfolio Exposure's evidence record is [`docs/evidence/portfolio-exposure-reference.md`](docs/evidence/portfolio-exposure-reference.md) — direct-FastAPI verification, test summaries, and a real browser screenshot with every displayed value cross-checked against the live API are complete; Canvas-specific evidence (agent-tool invocation logs, tool-isolation checks, process-lifecycle checks, and a Canvas-embedded screenshot) is explicitly marked TODO with step-by-step instructions.
+A genuine Canvas screenshot (EOD mode) is included above; see [`docs/evidence/treasury-reference.md`](docs/evidence/treasury-reference.md#screenshot) for capture details and provenance. Portfolio Exposure's evidence record is [`docs/evidence/portfolio-exposure-reference.md`](docs/evidence/portfolio-exposure-reference.md) — direct-FastAPI verification, test summaries, and a real browser screenshot with every displayed value cross-checked against the live API are complete; Canvas-specific evidence is explicitly deferred (see `docs/PROGRESS.md` "Resume here"). Portfolio Scenario Impact's evidence record is [`docs/evidence/portfolio-scenario-reference.md`](docs/evidence/portfolio-scenario-reference.md), verified the same way (direct FastAPI + full test suite), with Canvas-specific evidence deferred for the same stated reason.
 
-## 16. Repository structure
+## 18. Repository structure
 
 ```text
 AGENTS.md                          Canonical instructions for any agent (or human) changing this repository
 dashlet_framework/                 Shared app factory, agent-tool tag constant, provenance/error models
-dashlets/                          Dashlet FastAPI applications (Hello, Treasury Curve, Portfolio Exposure)
-                                    + Treasury/Portfolio providers
-portfolio_fixture.py               Portfolio position/exposure models and fixture loading
+dashlets/                          Dashlet FastAPI applications (Hello, Treasury Curve, Portfolio Exposure,
+                                    Portfolio Scenario Impact) + Treasury/Portfolio/Scenario providers
+portfolio_fixture.py               Portfolio position/exposure models and fixture loading (shared by
+                                    Portfolio Exposure and Portfolio Scenario Impact)
+scenario_fixture.py                Deterministic rate/spread/equity shock calculation engine
 treasury_fixture.py                Treasury curve models and fixture loading
 fixtures/treasury/                 Deterministic Treasury fixture data
 fixtures/portfolio/                Deterministic mock portfolio position fixtures
@@ -172,21 +207,22 @@ scripts/                           generate_tool_schemas.py (checked in CI) + ma
 docs/                              Installation, architecture, roadmap, progress, contract and evidence documentation
 ```
 
-## 17. Current limitations
+## 19. Current limitations
 
-- Hello, Treasury Curve and Portfolio Exposure are implemented; Portfolio Scenario Impact and Issuer Research are future work.
-- Portfolio Exposure has only a fixture data mode (mock positions) — there is no live holdings feed, unlike Treasury's fixture/EOD split.
+- Hello, Treasury Curve, Portfolio Exposure and Portfolio Scenario Impact are implemented; Issuer Research is future work.
+- Neither Portfolio Exposure nor Portfolio Scenario Impact has a live data mode (mock positions only) — there is no live holdings feed, unlike Treasury's fixture/EOD split.
+- Portfolio Scenario Impact's rate and spread shocks show $0 impact on the current fixture data (an all-equity book with no fixed-income holdings) — intentional and tested, not a defect; see §6.
 - Only one dashlet process runs at a time; there is no concurrent multi-dashlet or cross-dashlet composition view yet.
 - Dashlet registration (`DASHLET_REGISTRY` in `dashlet-registry.mjs`) is manual; there is no auto-discovery yet.
 - No production sandbox, persistent artifact store, or production identity/authorization model.
 - No hosted gallery; all verification has been against locally spawned processes.
 - See [`docs/PROGRESS.md`](docs/PROGRESS.md) "Known limitations" for the complete list.
 
-## 18. Roadmap
+## 20. Roadmap
 
 See [`docs/ROADMAP.md`](docs/ROADMAP.md) for the staged execution plan and [`docs/PROGRESS.md`](docs/PROGRESS.md#resume-here) for the prioritized next task.
 
-## 19. Documentation map
+## 21. Documentation map
 
 | Document | Purpose |
 |---|---|
@@ -204,14 +240,15 @@ See [`docs/ROADMAP.md`](docs/ROADMAP.md) for the staged execution plan and [`doc
 | [`docs/AGENTIC_DEVELOPMENT.md`](docs/AGENTIC_DEVELOPMENT.md) | How coding agents should be used on this project |
 | [`docs/PROGRESS.md`](docs/PROGRESS.md) | Milestone checklist, current status and "Resume here" |
 | [`docs/evidence/treasury-reference.md`](docs/evidence/treasury-reference.md) | Treasury milestone validation evidence |
-| [`docs/evidence/portfolio-exposure-reference.md`](docs/evidence/portfolio-exposure-reference.md) | Portfolio Exposure validation evidence (browser-verified; Canvas-specific sections still TODO) |
+| [`docs/evidence/portfolio-exposure-reference.md`](docs/evidence/portfolio-exposure-reference.md) | Portfolio Exposure validation evidence (browser-verified; Canvas-specific sections deferred) |
+| [`docs/evidence/portfolio-scenario-reference.md`](docs/evidence/portfolio-scenario-reference.md) | Portfolio Scenario Impact validation evidence (direct-FastAPI/test verified; Canvas-specific sections deferred) |
 | [`docs/REFERENCES.md`](docs/REFERENCES.md) | Verified external documentation and learning references |
 
-## 20. References
+## 22. References
 
 External documentation for every technology used in this project — GitHub Copilot App, Canvas extensions, FastAPI, Pydantic, Alpine.js, `uv`, Treasury data, and more — is curated in [`docs/REFERENCES.md`](docs/REFERENCES.md).
 
-## 21. Contributing / public-repository safety guidance
+## 23. Contributing / public-repository safety guidance
 
 This is a public repository. Before committing or opening a pull request:
 
