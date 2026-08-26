@@ -16,6 +16,9 @@ class Position(BaseModel):
     issuer: str
     sector: str
     market_value: float  # positive = long exposure, negative = short exposure
+    duration: float = 0.0  # rate-duration, years. 0.0 = no rate sensitivity (e.g. pure equity).
+    spread_duration: float = 0.0  # credit spread-duration, years. 0.0 = no credit sensitivity.
+    beta: float = 0.0  # equity market beta. 0.0 = no equity-factor sensitivity.
 
 
 class PortfolioSnapshotFixture(BaseModel):

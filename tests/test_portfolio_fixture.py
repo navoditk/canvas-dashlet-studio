@@ -22,6 +22,31 @@ def test_snapshot_loads_and_has_expected_date() -> None:
     assert len(snapshot.positions) == 12
 
 
+def test_position_scenario_fields_default_to_zero() -> None:
+    position = Position(issuer="A", sector="Technology", market_value=100.0)
+    assert position.duration == 0.0
+    assert position.spread_duration == 0.0
+    assert position.beta == 0.0
+
+
+def test_position_scenario_fields_accept_explicit_values() -> None:
+    position = Position(
+        issuer="A", sector="Technology", market_value=100.0,
+        duration=5.0, spread_duration=2.0, beta=1.3,
+    )
+    assert position.duration == 5.0
+    assert position.spread_duration == 2.0
+    assert position.beta == 1.3
+
+
+def test_real_fixtures_have_sector_beta_and_zero_duration() -> None:
+    snapshot = load_snapshot("fixtures/portfolio/positions_2026-08-19.json")
+    for position in snapshot.positions:
+        assert position.beta > 0.0, f"{position.issuer} should have a nonzero equity beta"
+        assert position.duration == 0.0, f"{position.issuer} is an equity position with no rate duration"
+        assert position.spread_duration == 0.0, f"{position.issuer} is an equity position with no spread duration"
+
+
 def test_empty_positions_rejected(tmp_path) -> None:
     bad_file = tmp_path / "empty.json"
     bad_file.write_text(

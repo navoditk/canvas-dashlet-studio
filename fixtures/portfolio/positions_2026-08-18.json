@@ -5,17 +5,17 @@
   },
   "observation_date": "2026-08-18",
   "positions": [
-    {"issuer": "TechCore Inc", "sector": "Technology", "market_value": 2200000.0},
-    {"issuer": "Nimbus Software", "sector": "Technology", "market_value": 1150000.0},
-    {"issuer": "Vantage Semiconductors", "sector": "Technology", "market_value": -250000.0},
-    {"issuer": "Meridian Bank", "sector": "Financials", "market_value": 1800000.0},
-    {"issuer": "Harbor Financial", "sector": "Financials", "market_value": 900000.0},
-    {"issuer": "Crestview Insurance", "sector": "Financials", "market_value": 600000.0},
-    {"issuer": "BioAxis Therapeutics", "sector": "Healthcare", "market_value": 1250000.0},
-    {"issuer": "Summit Health Systems", "sector": "Healthcare", "market_value": 700000.0},
-    {"issuer": "Orbital Energy Co", "sector": "Energy", "market_value": 900000.0},
-    {"issuer": "Continental Resources", "sector": "Energy", "market_value": -400000.0},
-    {"issuer": "Ironclad Industrials", "sector": "Industrials", "market_value": 1050000.0},
-    {"issuer": "Falcon Aerospace", "sector": "Industrials", "market_value": 500000.0}
+    {"issuer": "TechCore Inc", "sector": "Technology", "market_value": 2200000.0, "beta": 1.3},
+    {"issuer": "Nimbus Software", "sector": "Technology", "market_value": 1150000.0, "beta": 1.3},
+    {"issuer": "Vantage Semiconductors", "sector": "Technology", "market_value": -250000.0, "beta": 1.3},
+    {"issuer": "Meridian Bank", "sector": "Financials", "market_value": 1800000.0, "beta": 1.1},
+    {"issuer": "Harbor Financial", "sector": "Financials", "market_value": 900000.0, "beta": 1.1},
+    {"issuer": "Crestview Insurance", "sector": "Financials", "market_value": 600000.0, "beta": 1.1},
+    {"issuer": "BioAxis Therapeutics", "sector": "Healthcare", "market_value": 1250000.0, "beta": 0.7},
+    {"issuer": "Summit Health Systems", "sector": "Healthcare", "market_value": 700000.0, "beta": 0.7},
+    {"issuer": "Orbital Energy Co", "sector": "Energy", "market_value": 900000.0, "beta": 1.4},
+    {"issuer": "Continental Resources", "sector": "Energy", "market_value": -400000.0, "beta": 1.4},
+    {"issuer": "Ironclad Industrials", "sector": "Industrials", "market_value": 1050000.0, "beta": 1.0},
+    {"issuer": "Falcon Aerospace", "sector": "Industrials", "market_value": 500000.0, "beta": 1.0}
   ]
 }
