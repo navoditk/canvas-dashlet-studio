@@ -1,26 +1,19 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { AGENT_TOOL_PARAMETER_SCHEMAS } from "./generated-tool-schemas.mjs";
-
-// Every operationId currently approved anywhere in DASHLET_REGISTRY
-// (extension.mjs) is expected to have a generated schema here. This is a
-// drift guard, not a hand-maintained schema: if a new agent-tool operation
-// is added without regenerating, this test fails instead of the extension
-// silently falling back to DEFAULT_TOOL_PARAMETER_SCHEMA.
-const ALL_REGISTERED_OPERATION_IDS = [
-    "get_dashlet_summary",
-    "get_treasury_curve",
-    "get_treasury_curve_slopes",
-    "compare_treasury_curves",
-];
+import { REGISTERED_TOOL_IDS } from "./dashlet-registry.mjs";
 
 const TREASURY_OPERATION_IDS = ["get_treasury_curve", "get_treasury_curve_slopes", "compare_treasury_curves"];
 
-test("every registered operationId has a generated schema", () => {
-    for (const operationId of ALL_REGISTERED_OPERATION_IDS) {
+// This reads the real DASHLET_REGISTRY (via REGISTERED_TOOL_IDS), not a
+// hand-copied list -- if a new operationId is approved in the registry
+// without regenerating its schema, this test fails instead of the extension
+// silently falling back to DEFAULT_TOOL_PARAMETER_SCHEMA at runtime.
+test("every operationId approved in DASHLET_REGISTRY has a generated schema", () => {
+    for (const operationId of REGISTERED_TOOL_IDS) {
         assert.ok(
             Object.hasOwn(AGENT_TOOL_PARAMETER_SCHEMAS, operationId),
-            `expected a generated schema for ${operationId}`,
+            `expected a generated schema for ${operationId} (approved in DASHLET_REGISTRY)`,
         );
     }
 });

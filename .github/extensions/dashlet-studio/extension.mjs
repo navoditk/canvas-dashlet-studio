@@ -5,6 +5,7 @@ import { ToolProxy } from "./tool-proxy.mjs";
 import { createControlApiHandler, createControlToken, renderCanvasPage } from "./control-server.mjs";
 import { installProcessCleanupHandlers } from "./process-cleanup.mjs";
 import { AGENT_TOOL_PARAMETER_SCHEMAS } from "./generated-tool-schemas.mjs";
+import { DASHLET_REGISTRY, REGISTERED_TOOL_IDS, TOOL_DESCRIPTIONS } from "./dashlet-registry.mjs";
 
 // Defensive fallback only: every operationId in REGISTERED_TOOL_IDS is
 // expected to have a generated entry in AGENT_TOOL_PARAMETER_SCHEMAS (see
@@ -17,30 +18,6 @@ const DEFAULT_TOOL_PARAMETER_SCHEMA = Object.freeze({
     additionalProperties: false,
     required: Object.freeze([]),
     properties: Object.freeze({}),
-});
-
-const DASHLET_REGISTRY = Object.freeze({
-    hello: Object.freeze({
-        id: "hello",
-        displayName: "Hello Dashlet",
-        module: "dashlets.hello_dashlet:app",
-        approvedTools: Object.freeze(["get_dashlet_summary"]),
-    }),
-    "treasury-curve": Object.freeze({
-        id: "treasury-curve",
-        displayName: "Treasury Curve",
-        module: "dashlets.treasury_curve_dashlet:app",
-        approvedTools: Object.freeze(["get_treasury_curve", "get_treasury_curve_slopes", "compare_treasury_curves"]),
-    }),
-});
-const REGISTERED_TOOL_IDS = [
-    ...new Set(Object.values(DASHLET_REGISTRY).flatMap((entry) => entry.approvedTools)),
-];
-const TOOL_DESCRIPTIONS = Object.freeze({
-    get_dashlet_summary: "Get the typed summary from the local hello dashlet. This proxies GET /api/summary.",
-    get_treasury_curve: "Get the deterministic Treasury curve for one observation date.",
-    get_treasury_curve_slopes: "Get canonical Treasury curve slopes for one observation date.",
-    compare_treasury_curves: "Compare two Treasury curves and return basis-point deltas by maturity.",
 });
 
 const canvasServers = new Map();

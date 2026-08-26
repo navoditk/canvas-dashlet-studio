@@ -17,15 +17,15 @@ Update this file at the end of each implementation block. Mark an item complete 
 
 ## Resume here
 
-The next developer should start with **Task 2** below before anything else in this repository.
+The next developer should start with **Task 5** below before anything else in this repository.
 
-**Recommended branch:** `feature/contract-validation`
+**Recommended branch:** `feature/portfolio-exposure`
 
 1. ~~Add GitHub Actions for Ruff, Pytest and Node tests.~~ Done — see `.github/workflows/ci.yml`.
-2. **Add reusable dashlet/OpenAPI contract validation** (still open — e.g. a script/test asserting every registered dashlet exposes `/health` and `/metadata`, every `agent-tool`-tagged operation has a `response_model` and a unique `operationId`, and untagged routes are never in the Canvas allowlist).
+2. ~~Add reusable dashlet/OpenAPI contract validation.~~ Done — see `tests/test_dashlet_contract.py` (Python: every registered dashlet exposes `/health`/`/metadata`, agent-tool operations have a declared `response_model` and a globally unique `operationId`, root pages use mount-relative fetch paths) and `.github/extensions/dashlet-studio/dashlet-registry.test.mjs` (JS: registry shape, no cross-dashlet tool collisions, every approved tool has a schema and a description). `DASHLET_REGISTRY`/`REGISTERED_TOOL_IDS`/`TOOL_DESCRIPTIONS` were extracted from `extension.mjs` into `dashlet-registry.mjs` so they're importable by tests without triggering `joinSession()`.
 3. ~~Extract the reusable framework from the repeated Hello and Treasury patterns.~~ Done — see `dashlet_framework/` (`app.py`, `models.py`).
 4. ~~Replace the Treasury-specific Canvas schema bridge (`treasury-tool-schemas.mjs`) with generic approved OpenAPI-to-capability schema generation.~~ Done — see `scripts/generate_tool_schemas.py` and `.github/extensions/dashlet-studio/generated-tool-schemas.mjs`.
-5. Build Portfolio Exposure and Concentration using the framework.
+5. **Build Portfolio Exposure and Concentration using the framework** (next).
 6. Build Portfolio Scenario Impact using the framework.
 7. Add Issuer Research as a later use case.
 8. Build and publish the FastAPI gallery.
@@ -44,11 +44,14 @@ The next developer should start with **Task 2** below before anything else in th
 - [x] Official EOD provider (Treasury.gov).
 - [x] Explicit fixture/EOD selection contract (`data_mode` required, enum-constrained, no silent default, no EOD-failure fallback).
 - [x] Treasury Canvas integration.
-- [x] Treasury agent tools with explicit schemas (`treasury-tool-schemas.mjs`).
+- [x] Treasury agent tools with explicit schemas, generated from OpenAPI (`scripts/generate_tool_schemas.py`, `generated-tool-schemas.mjs`).
 - [x] Active-dashlet tool isolation.
 - [x] Test and security-review checkpoints for this milestone (see Evidence below).
+- [x] Shared `dashlet_framework` package and reusable dashlet/OpenAPI contract validation.
+- [x] Canonical `AGENTS.md` and detailed contract docs (Milestone 4 durable-instruction prerequisites).
 - [ ] Portfolio Exposure, Portfolio Scenario Impact, Issuer Research (Milestone 4 — not started).
-- [ ] CI, contract validation, gallery publication (Milestone 5 — not started).
+- [x] CI (`.github/workflows/ci.yml`).
+- [ ] Gallery publication (Milestone 5 — not started).
 
 ## Evidence
 

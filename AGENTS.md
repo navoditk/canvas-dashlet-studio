@@ -55,10 +55,10 @@ Every dashlet is one Python file under `dashlets/`, built with `dashlet_framewor
 
 ## 6. Agent-tool rules
 
-- Only operations tagged `AGENT_TOOL_TAG` **and** present in the Canvas extension's `DASHLET_REGISTRY.approvedTools` allowlist (`.github/extensions/dashlet-studio/extension.mjs`) become Copilot tools. Both conditions are required; neither alone is sufficient.
+- Only operations tagged `AGENT_TOOL_TAG` **and** present in the Canvas extension's `DASHLET_REGISTRY.approvedTools` allowlist (`.github/extensions/dashlet-studio/dashlet-registry.mjs`) become Copilot tools. Both conditions are required; neither alone is sufficient.
 - Canvas tools are registered once, statically, at `joinSession()` — **before any dashlet process is running.** This is why tool parameter schemas cannot be fetched live; they are generated ahead of time by `scripts/generate_tool_schemas.py` from each dashlet's real `app.openapi()` output. After adding or changing any `agent-tool`-tagged operation's parameters, regenerate the schema file and commit the result — CI will fail the build otherwise (`--check` mode).
 - Never hand-edit `.github/extensions/dashlet-studio/generated-tool-schemas.mjs` — it is a generated file; the header says so.
-- New dashlet registration in `extension.mjs` (`DASHLET_REGISTRY`, `TOOL_DESCRIPTIONS`) is still manual today — there is no auto-discovery yet. Add the entry deliberately as part of the same change that adds the dashlet.
+- New dashlet registration in `dashlet-registry.mjs` (`DASHLET_REGISTRY`, `TOOL_DESCRIPTIONS`) is still manual today — there is no auto-discovery yet. Add the entry deliberately as part of the same change that adds the dashlet.
 
 ## 7. Must / must not
 
@@ -94,7 +94,7 @@ Per `docs/AGENTIC_DEVELOPMENT.md` §10: a generated dashlet should be reviewed b
 - Built on `dashlet_framework`, satisfying §4 above.
 - Fixture-backed deterministic tests exist (pytest) covering the required routes, at least one agent-tool operation, and provenance.
 - At least one UI data operation is also exposed as an approved agent tool (the dual-use contract, §1).
-- Registered in `extension.mjs`'s `DASHLET_REGISTRY`; tool schemas regenerated and committed.
+- Registered in `dashlet-registry.mjs`'s `DASHLET_REGISTRY`; tool schemas regenerated and committed.
 - `ruff`, `pytest`, the schema `--check`, and `npm test` all pass.
 - `README.md` and `docs/PROGRESS.md` updated to reflect the new dashlet.
 - Independent review completed (§8).

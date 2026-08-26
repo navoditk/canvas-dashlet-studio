@@ -133,10 +133,11 @@ AGENTS.md                          Canonical instructions for any agent (or huma
 dashlet_framework/                 Shared app factory, agent-tool tag constant, provenance/error models
 dashlets/                          Dashlet FastAPI applications (Hello, Treasury Curve) + Treasury provider
 fixtures/treasury/                 Deterministic Treasury fixture data
-tests/                             Python pytest suite
+tests/                             Python pytest suite, including the generic dashlet contract validation
 tests/js/                          Node-based behavioral tests for the Treasury iframe client
 scripts/                           generate_tool_schemas.py (checked in CI) + manual/ad hoc verification scripts
-.github/extensions/dashlet-studio/ Canvas extension: process launcher, tool proxy, control server, generated tool schemas
+.github/extensions/dashlet-studio/ Canvas extension: process launcher, tool proxy, control server, dashlet
+                                    registry, generated tool schemas
 .github/workflows/                 CI: Ruff, Pytest, tool-schema drift check, npm test
 docs/                              Installation, architecture, roadmap, progress, contract and evidence documentation
 ```
@@ -145,7 +146,7 @@ docs/                              Installation, architecture, roadmap, progress
 
 - Only Hello and Treasury Curve are implemented; Portfolio Exposure, Portfolio Scenario Impact and Issuer Research are future work.
 - Only one dashlet process runs at a time; there is no concurrent multi-dashlet or cross-dashlet composition view yet.
-- Dashlet registration (`DASHLET_REGISTRY` in `extension.mjs`) is manual; there is no auto-discovery yet.
+- Dashlet registration (`DASHLET_REGISTRY` in `dashlet-registry.mjs`) is manual; there is no auto-discovery yet.
 - No production sandbox, persistent artifact store, or production identity/authorization model.
 - No hosted gallery; all verification has been against locally spawned processes.
 - See [`docs/PROGRESS.md`](docs/PROGRESS.md) "Known limitations" for the complete list.

@@ -7,7 +7,7 @@ How a dashlet operation becomes a Copilot agent tool. Read `docs/ARCHITECTURE.md
 An operation becomes a Copilot tool only when **both** are true:
 
 1. Its FastAPI route decorator includes `tags=[dashlet_framework.AGENT_TOOL_TAG]`.
-2. Its `operation_id` is listed in that dashlet's `approvedTools` in `DASHLET_REGISTRY` (`.github/extensions/dashlet-studio/extension.mjs`).
+2. Its `operation_id` is listed in that dashlet's `approvedTools` in `DASHLET_REGISTRY` (`.github/extensions/dashlet-studio/dashlet-registry.mjs`).
 
 Neither alone is sufficient — this is deliberate defense in depth (`ARCHITECTURE.md` §5's "dual-use business-operation requirement"). A tagged-but-not-allowlisted operation is invisible to Copilot; an allowlisted-but-untagged `operationId` will never match anything `selectApprovedOperations` finds in the OpenAPI document.
 
@@ -15,8 +15,8 @@ Neither alone is sufficient — this is deliberate defense in depth (`ARCHITECTU
 
 1. In the dashlet file, add `tags=[AGENT_TOOL_TAG]` to the route decorator (import `AGENT_TOOL_TAG` from `dashlet_framework`).
 2. Give it a globally unique `operation_id`, a `response_model`, and a clear `description` — the description becomes the tool description an agent reads if you don't override it in step 4.
-3. In `extension.mjs`, add the `operation_id` to the dashlet's entry in `DASHLET_REGISTRY.approvedTools`.
-4. In `extension.mjs`'s `TOOL_DESCRIPTIONS`, add an agent-facing description if the OpenAPI `description` isn't itself a good tool description (the fallback is `Proxy approved dashlet operation "<id>".`, which is not a good default — always add a real one).
+3. In `dashlet-registry.mjs`, add the `operation_id` to the dashlet's entry in `DASHLET_REGISTRY.approvedTools`.
+4. In `dashlet-registry.mjs`'s `TOOL_DESCRIPTIONS`, add an agent-facing description if the OpenAPI `description` isn't itself a good tool description (the fallback is `Proxy approved dashlet operation "<id>".`, which is not a good default — always add a real one).
 5. Regenerate tool schemas: `uv run python scripts/generate_tool_schemas.py`. Commit the resulting change to `generated-tool-schemas.mjs`.
 6. Add a test to `.github/extensions/dashlet-studio/generated-tool-schemas.test.mjs` (or extend the existing generic assertions) confirming the new operation's schema shape.
 7. Verify: `uv run python scripts/generate_tool_schemas.py --check` passes (this is what CI runs — it will fail the build if you forgot step 5).
