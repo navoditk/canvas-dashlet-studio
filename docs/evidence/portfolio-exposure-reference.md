@@ -6,7 +6,7 @@ Portfolio Exposure & Concentration dashlet — second business-use-case dashlet 
 
 ## Validation date
 
-2026-08-26 (automated/direct-FastAPI sections below). Live Canvas sections are **not yet completed** — see the TODO markers throughout; no browser tool was connected in the session that built this dashlet.
+2026-08-26. Direct-FastAPI, automated-test, and standalone-browser sections are complete. Live-Canvas-specific sections (agent-tool invocation logs, tool isolation, process lifecycle) are **not yet completed** — see the TODO markers below; no Canvas/Copilot session was available in the session that built this dashlet, only a standalone browser screenshot of the dashlet running directly under `uvicorn`.
 
 ## Commit SHA
 
@@ -62,6 +62,27 @@ These match the hand-calculated totals from the 12-position fixture (`fixtures/p
 ## iframe endpoint-path evidence
 
 The dashlet's inline Alpine client fetches `./api/portfolio/fixture-dates`, `./api/portfolio/exposures`, `./api/portfolio/concentration`, `./api/portfolio/compare` — the identical mount-relative paths and `operationId`s used by the agent-tool proxy. Verified by reading `dashlets/portfolio_exposure_dashlet.py`'s inline `<script>` and by the generic contract test `tests/test_dashlet_contract.py::test_root_page_uses_mount_relative_fetch_paths`, which asserts no absolute `fetch("/...")` path appears anywhere in the rendered page.
+
+## Standalone browser verification (screenshot)
+
+Captured live in a real browser against `uv run uvicorn dashlets.portfolio_exposure_dashlet:app` — not through Canvas, but a genuine interactive session against the real running dashlet (Observation Date `2026-08-18`, Comparison Date `2026-08-19`, after clicking **Load** then **Compare**):
+
+![Portfolio Exposure Monitor, standalone browser, 2026-08-18 with 2026-08-19 comparison loaded](images/portfolio-exposure-standalone.png)
+
+Every value on screen was independently cross-checked against a direct `curl` call to the same running server (`GET /api/portfolio/exposures?date=2026-08-18` and `GET /api/portfolio/compare?base_date=2026-08-19&compare_date=2026-08-18`) and matches exactly:
+
+| On screen | Direct API | Match |
+|---|---|---|
+| Long Market Value: $11,050,000 | `long_market_value: 11050000.0` | ✅ |
+| Short Market Value: $650,000 | `short_market_value: 650000.0` | ✅ |
+| Net Market Value: $10,400,000 | `net_market_value: 10400000.0` | ✅ |
+| Sector chart bars (Energy 0.5M, Financials 3.3M, Healthcare 1.95M, Industrials 1.55M, Technology 3.1M) | `sector_exposures[*].net_market_value` | ✅ |
+| Top issuer: TechCore Inc, Technology, +21.2% | `net_weight_pct: 21.153846...` | ✅ |
+| Meridian Bank, Financials, +17.3% | `net_weight_pct: 17.307692...` | ✅ |
+| BioAxis Therapeutics, Healthcare, +12.0% | `net_weight_pct: 12.019231...` | ✅ |
+| Sector Exposure Change: Energy +0.6%, Financials +0.3%, Healthcare -0.0%, Industrials -0.1% | `compare?base_date=2026-08-19&compare_date=2026-08-18` deltas | ✅ |
+
+This confirms the full UI → fetch → FastAPI → provider → calculation → render path works correctly end to end in a real browser, including the Load/Compare interaction, chart rendering, and both tables. What it does **not** confirm is the Canvas-specific path (iframe mounting, control-panel status, the agent-tool proxy) — that's the remaining TODO below.
 
 ## Agent-tool endpoint-path evidence
 
@@ -124,13 +145,13 @@ Includes `dashlet-registry.test.mjs` (registry shape, no cross-dashlet tool-id c
 }
 ```
 
-## Screenshot
+## Canvas screenshot
 
-**Not yet captured.** No browser tool was connected in the session that built this dashlet. To capture: open Dashlet Studio Canvas with `portfolio-exposure` active, load a date, run a comparison, screenshot the page (crop out any transient local port/PID/loopback URL from the control-panel sidebar, matching the redaction already done for the Treasury screenshot), save as `docs/evidence/images/portfolio-exposure-canvas.png`, and link it here.
+**Not yet captured** — see the standalone screenshot above for a genuine, cross-verified browser capture of the dashlet itself. This section is specifically for the *Canvas-embedded* view (iframe + control-panel chrome), which still requires a live Copilot Canvas session. To capture: open Dashlet Studio Canvas with `portfolio-exposure` active, load a date, run a comparison, screenshot the page (crop out any transient local port/PID/loopback URL from the control-panel sidebar, matching the redaction already done for the Treasury screenshot), save as `docs/evidence/images/portfolio-exposure-canvas.png`, and link it here.
 
 ## Known limitations
 
-- **No live Canvas verification yet** (agent-tool endpoint-path evidence, tool-isolation negative tests, process-lifecycle results, and the screenshot are all TODO above) — everything verified so far is direct-FastAPI (`curl`/`uvicorn`) and automated-test evidence, not a live Copilot session.
+- **No live Canvas verification yet** (agent-tool endpoint-path evidence, tool-isolation negative tests, process-lifecycle results, and the Canvas-embedded screenshot are all TODO above). The dashlet itself *is* now verified working end-to-end in a real browser (see "Standalone browser verification" above, with every displayed value cross-checked against the live API) — what remains is Canvas-specific: the iframe embedding, the control-panel chrome, and the agent-tool proxy path.
 - No live holdings provider exists for this dashlet — fixture-only, by design (see `docs/DATA_ACCESS.md` §2), not a gap to close later.
 - Independent code review has not yet been completed for this dashlet (see `docs/PROGRESS.md` Milestone 4 evidence) — implemented directly by Claude Code this session, review still open.
 - The generic OpenAPI-to-tool-schema generator does not carry `top_n`'s `ge=1, le=20` bounds into the Copilot-visible schema; FastAPI still enforces the real bound server-side with a 422 (verified above), so this is a schema-precision gap, not a safety gap.
