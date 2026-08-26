@@ -31,6 +31,7 @@ from dashlet_framework import AGENT_TOOL_TAG
 DASHLET_MODULES: list[str] = [
     "dashlets.hello_dashlet:app",
     "dashlets.treasury_curve_dashlet:app",
+    "dashlets.portfolio_exposure_dashlet:app",
 ]
 
 OUTPUT_PATH = (

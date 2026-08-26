@@ -11,22 +11,22 @@ Update this file at the end of each implementation block. Mark an item complete 
 
 ## Current status
 
-- **Overall milestone status:** the Treasury Curve reference dashlet is complete through Milestone 3 (manual dashlet, Canvas local runtime, agent-tool bridge), including the explicit fixture/EOD provider-selection contract. CI, the shared `dashlet_framework` package, and generic OpenAPI-derived tool schemas (originally Resume-here tasks 1, 3 and 4) are now also done, ahead of task 2. Milestone 4's durable-instruction prerequisites (`AGENTS.md`, tool-specific files, the four contract docs) are now also done. Milestone 4's remaining work (Portfolio Exposure, Scenario Impact, Issuer Research) has not started.
+- **Overall milestone status:** the Treasury Curve reference dashlet is complete through Milestone 3. CI, the shared `dashlet_framework` package, generic OpenAPI-derived tool schemas, and reusable contract validation (originally Resume-here tasks 1–4) are done. Milestone 4's durable-instruction prerequisites are done, and Portfolio Exposure & Concentration (task 5) is now also done, pending independent review (see Milestone 4 evidence above). Remaining Milestone 4 work: Portfolio Scenario Impact, Issuer Research.
 - **Latest validation date:** 2026-08-26.
-- **What works today:** Hello Dashlet and the Treasury Curve dashlet both run under the Dashlet Studio Canvas extension, now built on a shared `dashlet_framework` package (`create_dashlet_app`, `AGENT_TOOL_TAG`, `Provenance`, `DashletErrorDetail`/`DashletErrorResponse`) instead of duplicated per-dashlet boilerplate; both dashlets expose `/health` and `/metadata`. A user can switch between them, view either in the iframe, and ask Copilot to invoke their approved agent tools. Treasury exposes `get_treasury_curve`, `get_treasury_curve_slopes` and `compare_treasury_curves`, each requiring an explicit `data_mode` (`fixture` or `eod`) with no silent default and no fallback on EOD failure. The Canvas extension's agent-tool parameter schemas are now generated from each dashlet's real `app.openapi()` output by `scripts/generate_tool_schemas.py` (writing `.github/extensions/dashlet-studio/generated-tool-schemas.mjs`) rather than hand-maintained; CI fails if the committed generated file drifts from source. A GitHub Actions workflow (`.github/workflows/ci.yml`) runs Ruff, Pytest, the schema-drift check and the extension's `npm test` on every push/PR.
+- **What works today:** Hello, Treasury Curve and Portfolio Exposure all run under the Dashlet Studio Canvas extension, built on a shared `dashlet_framework` package (`create_dashlet_app`, `AGENT_TOOL_TAG`, `Provenance`, `DashletErrorDetail`/`DashletErrorResponse`) instead of duplicated per-dashlet boilerplate; every dashlet exposes `/health` and `/metadata`. A user can switch between any of the three, view it in the iframe, and ask Copilot to invoke its approved agent tools. Treasury exposes `get_treasury_curve`, `get_treasury_curve_slopes` and `compare_treasury_curves` with an explicit fixture/EOD `data_mode`. Portfolio Exposure exposes `get_portfolio_exposures`, `get_top_concentrations` and `compare_portfolio_exposures` from deterministic mock positions (fixture-only, no live mode). Agent-tool parameter schemas are generated from each dashlet's real `app.openapi()` output by `scripts/generate_tool_schemas.py`; CI fails if the committed generated file drifts from source. Reusable contract validation (`tests/test_dashlet_contract.py`, `dashlet-registry.test.mjs`) checks every registered dashlet automatically. A GitHub Actions workflow (`.github/workflows/ci.yml`) runs Ruff, Pytest, the schema-drift check and `npm test` on every push/PR.
 
 ## Resume here
 
-The next developer should start with **Task 5** below before anything else in this repository.
+The next developer should start with **Task 6** below before anything else in this repository. Before that, consider closing out task 5's open item: an independent review pass of the Portfolio Exposure dashlet (see Milestone 4 evidence above) — it was implemented but not yet independently reviewed.
 
-**Recommended branch:** `feature/portfolio-exposure`
+**Recommended branch:** `feature/portfolio-scenario-impact`
 
 1. ~~Add GitHub Actions for Ruff, Pytest and Node tests.~~ Done — see `.github/workflows/ci.yml`.
-2. ~~Add reusable dashlet/OpenAPI contract validation.~~ Done — see `tests/test_dashlet_contract.py` (Python: every registered dashlet exposes `/health`/`/metadata`, agent-tool operations have a declared `response_model` and a globally unique `operationId`, root pages use mount-relative fetch paths) and `.github/extensions/dashlet-studio/dashlet-registry.test.mjs` (JS: registry shape, no cross-dashlet tool collisions, every approved tool has a schema and a description). `DASHLET_REGISTRY`/`REGISTERED_TOOL_IDS`/`TOOL_DESCRIPTIONS` were extracted from `extension.mjs` into `dashlet-registry.mjs` so they're importable by tests without triggering `joinSession()`.
+2. ~~Add reusable dashlet/OpenAPI contract validation.~~ Done — see `tests/test_dashlet_contract.py` and `.github/extensions/dashlet-studio/dashlet-registry.test.mjs`. `DASHLET_REGISTRY`/`REGISTERED_TOOL_IDS`/`TOOL_DESCRIPTIONS` were extracted from `extension.mjs` into `dashlet-registry.mjs` so they're importable by tests without triggering `joinSession()`.
 3. ~~Extract the reusable framework from the repeated Hello and Treasury patterns.~~ Done — see `dashlet_framework/` (`app.py`, `models.py`).
 4. ~~Replace the Treasury-specific Canvas schema bridge (`treasury-tool-schemas.mjs`) with generic approved OpenAPI-to-capability schema generation.~~ Done — see `scripts/generate_tool_schemas.py` and `.github/extensions/dashlet-studio/generated-tool-schemas.mjs`.
-5. **Build Portfolio Exposure and Concentration using the framework** (next).
-6. Build Portfolio Scenario Impact using the framework.
+5. ~~Build Portfolio Exposure and Concentration using the framework.~~ Done — see `dashlets/portfolio_exposure_dashlet.py`, `dashlets/portfolio_provider.py`, `portfolio_fixture.py`. Independent review still open (Milestone 4 evidence above).
+6. **Build Portfolio Scenario Impact using the framework** (next).
 7. Add Issuer Research as a later use case.
 8. Build and publish the FastAPI gallery.
 9. Add stronger governance, sandboxing, identity, observability and evaluations later.
@@ -216,12 +216,12 @@ timeout setting, not a fixture-fallback defect).
 - [x] Tool-specific instructions reference canonical rules.
 - [x] Creation workflow/skill created.
 - [x] Review workflow/skill created.
-- [ ] Portfolio Exposure generated using framework.
+- [x] Portfolio Exposure generated using framework.
 - [ ] Portfolio Scenario Impact generated using framework.
 - [ ] Issuer Research generated or recorded as the first post-sprint extension.
-- [ ] Every completed business use case has at least one verified agent tool.
-- [ ] Independent reviews completed.
-- [ ] No application-specific framework changes were required, or changes were justified.
+- [x] Every completed business use case (Treasury, Portfolio Exposure) has at least one verified agent tool.
+- [!] Independent reviews completed. Portfolio Exposure was implemented by Claude Code in this session; per AGENTS.md §8 / AGENTIC_DEVELOPMENT.md §10 it still needs an independent review pass (a different agent or a human) before being considered fully done.
+- [x] No application-specific framework changes were required for Portfolio Exposure (`dashlet_framework` used unchanged; only dashlet-specific `portfolio_fixture.py`/`portfolio_provider.py` were added, mirroring the existing Treasury pattern).
 
 Evidence (durable instructions):
 
@@ -244,14 +244,41 @@ tool-specific files -> docs/*.md loaded when needed) is itself the "workflow," s
 additional skill packaging was added on top of it.
 ```
 
-Evidence (Portfolio Exposure / Scenario Impact):
+Evidence (Portfolio Exposure):
 
 ```text
-Generation prompts:
-Implementing agents:
-Reviewing agents:
-PRs:
-Framework changes:
+Date: 2026-08-26
+Generation prompt: user asked for a detailed roadmap and next steps; agreed sequencing was
+AGENTS.md/contract docs first, then contract validation, then Portfolio Exposure, with Claude
+Code implementing directly (per AGENTIC_DEVELOPMENT.md §10's sanctioned implementer role) and
+detailed narrated visibility plus small independently-green commits, per the user's explicit
+instruction.
+Implementing agent: Claude Code (this session), following AGENTS.md / docs/DASHLET_CONTRACT.md
+/ docs/DATA_ACCESS.md / docs/WEB_AUTHORING.md / docs/TOOL_AUTHORING.md written earlier in the
+same session.
+Files added: fixtures/portfolio/positions_2026-08-{18,19}.json (12 positions, 5 sectors, 2
+short positions); portfolio_fixture.py (models, load_snapshot, compute_totals,
+compute_sector_exposures, compute_issuer_exposures); dashlets/portfolio_provider.py
+(FixturePortfolioProvider -- fixture-only, no live mode); dashlets/portfolio_exposure_dashlet.py
+(get_portfolio_exposures, get_top_concentrations, compare_portfolio_exposures, all tagged
+agent-tool; /metadata; embedded Alpine/Plotly UI); tests/test_portfolio_fixture.py,
+tests/test_portfolio_provider.py, tests/test_portfolio_exposure_dashlet.py (37 tests);
+registered in .github/extensions/dashlet-studio/dashlet-registry.mjs; tool schemas regenerated
+(scripts/generate_tool_schemas.py) and verified against a real uvicorn process boot.
+Test command: uv run pytest -> 116 passed; npm test -> 41 passed; uv run python
+scripts/generate_tool_schemas.py --check -> OK; uv run ruff check . -> clean.
+Reviewing agents: not yet completed -- see Milestone 4 checklist "Independent reviews
+completed" above.
+PRs: committed directly to main (see git log 2026-08-26), following the same small-commit
+pattern used for the CI/framework/contract-validation work earlier in this session.
+Framework changes: none. dashlet_framework (create_dashlet_app, AGENT_TOOL_TAG, Provenance,
+DashletErrorDetail/DashletErrorResponse) was reused unchanged.
+Known gaps: no live browser verification was performed (no Chrome extension connected in this
+session) -- verified instead via a real uvicorn process boot, direct curl checks, and pytest
+assertions on the exact embedded HTML/JS content. The generic OpenAPI-to-tool-schema generator
+does not carry over numeric ge/le bounds (top_n is 1-20 server-side in FastAPI, exposed to
+Copilot as an unbounded integer) -- FastAPI still enforces the real bound with a 422, so this
+is a minor schema-precision gap, not a safety gap.
 ```
 
 ## Milestone 5 — CI and publication

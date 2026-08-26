@@ -63,4 +63,45 @@ export const AGENT_TOOL_PARAMETER_SCHEMAS = Object.freeze({
             }),
         }),
     }),
+    "get_portfolio_exposures": Object.freeze({
+        "type": "object",
+        "additionalProperties": false,
+        "required": Object.freeze([]),
+        "properties": Object.freeze({
+            "date": Object.freeze({
+                "type": "string",
+                "description": "Observation date in YYYY-MM-DD format. Omit to use the latest available fixture date.",
+            }),
+        }),
+    }),
+    "get_top_concentrations": Object.freeze({
+        "type": "object",
+        "additionalProperties": false,
+        "required": Object.freeze([]),
+        "properties": Object.freeze({
+            "date": Object.freeze({
+                "type": "string",
+                "description": "Observation date in YYYY-MM-DD format. Omit to use the latest available fixture date.",
+            }),
+            "top_n": Object.freeze({
+                "type": "integer",
+                "description": "Number of top concentrations to return (1-20).",
+            }),
+        }),
+    }),
+    "compare_portfolio_exposures": Object.freeze({
+        "type": "object",
+        "additionalProperties": false,
+        "required": Object.freeze(["base_date", "compare_date"]),
+        "properties": Object.freeze({
+            "base_date": Object.freeze({
+                "type": "string",
+                "description": "Required base observation date in YYYY-MM-DD format.",
+            }),
+            "compare_date": Object.freeze({
+                "type": "string",
+                "description": "Required comparison observation date in YYYY-MM-DD format.",
+            }),
+        }),
+    }),
 });

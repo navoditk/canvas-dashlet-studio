@@ -66,6 +66,26 @@ test("compare_treasury_curves exposes base_date/compare_date matching FastAPI re
     assert.equal(schema.properties.compare_date.type, "string");
 });
 
+test("get_portfolio_exposures and get_top_concentrations expose only optional date (+ top_n)", () => {
+    const exposures = AGENT_TOOL_PARAMETER_SCHEMAS.get_portfolio_exposures;
+    assert.deepEqual(Object.keys(exposures.properties).sort(), ["date"]);
+    assert.deepEqual(exposures.required, []);
+
+    const concentrations = AGENT_TOOL_PARAMETER_SCHEMAS.get_top_concentrations;
+    assert.deepEqual(Object.keys(concentrations.properties).sort(), ["date", "top_n"]);
+    assert.deepEqual(concentrations.required, []);
+    assert.equal(concentrations.properties.top_n.type, "integer");
+});
+
+test("compare_portfolio_exposures requires base_date and compare_date, no data_mode", () => {
+    const schema = AGENT_TOOL_PARAMETER_SCHEMAS.compare_portfolio_exposures;
+    assert.deepEqual(Object.keys(schema.properties).sort(), ["base_date", "compare_date"]);
+    assert.deepEqual([...schema.required].sort(), ["base_date", "compare_date"]);
+    // Unlike Treasury, Portfolio Exposure has no live data source in this MVP
+    // (see dashlets/portfolio_provider.py), so there is no data_mode parameter.
+    assert.ok(!Object.hasOwn(schema.properties, "data_mode"));
+});
+
 test("schema map and each schema's properties are frozen (immutable)", () => {
     assert.ok(Object.isFrozen(AGENT_TOOL_PARAMETER_SCHEMAS));
     for (const schema of Object.values(AGENT_TOOL_PARAMETER_SCHEMAS)) {

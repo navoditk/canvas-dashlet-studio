@@ -18,6 +18,16 @@ export const DASHLET_REGISTRY = Object.freeze({
         module: "dashlets.treasury_curve_dashlet:app",
         approvedTools: Object.freeze(["get_treasury_curve", "get_treasury_curve_slopes", "compare_treasury_curves"]),
     }),
+    "portfolio-exposure": Object.freeze({
+        id: "portfolio-exposure",
+        displayName: "Portfolio Exposure",
+        module: "dashlets.portfolio_exposure_dashlet:app",
+        approvedTools: Object.freeze([
+            "get_portfolio_exposures",
+            "get_top_concentrations",
+            "compare_portfolio_exposures",
+        ]),
+    }),
 });
 
 export const REGISTERED_TOOL_IDS = [
@@ -29,4 +39,7 @@ export const TOOL_DESCRIPTIONS = Object.freeze({
     get_treasury_curve: "Get the deterministic Treasury curve for one observation date.",
     get_treasury_curve_slopes: "Get canonical Treasury curve slopes for one observation date.",
     compare_treasury_curves: "Compare two Treasury curves and return basis-point deltas by maturity.",
+    get_portfolio_exposures: "Get deterministic long/short/net portfolio exposure by sector and issuer for one observation date.",
+    get_top_concentrations: "Get the top issuer and sector concentrations by absolute net exposure weight for one observation date.",
+    compare_portfolio_exposures: "Compare sector-level net portfolio exposure between two observation dates and return the deltas.",
 });
