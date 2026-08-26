@@ -65,10 +65,12 @@ The iframe and the Copilot agent both call the **same** FastAPI business operati
 | Agent workspace | GitHub Copilot App and Canvas |
 | Canvas extension | JavaScript / Node.js |
 | Runtime | Python, FastAPI, Uvicorn |
-| Contracts | Pydantic and OpenAPI |
+| Shared framework | `dashlet_framework` (app factory, provenance/error models) — Python, no new runtime dependency |
+| Contracts | Pydantic and OpenAPI — OpenAPI is also the source `scripts/generate_tool_schemas.py` reads to generate Canvas tool schemas (see [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) §6) |
 | Data | HTTPX, provider adapters, deterministic fixtures |
 | UI | HTML, Alpine.js, Tailwind CSS, Plotly.js |
-| Quality | Pytest, FastAPI `TestClient`, Ruff, Node's built-in test runner |
+| Quality | Pytest, FastAPI `TestClient`, Ruff, Node's built-in test runner, generic dashlet-contract validation (`tests/test_dashlet_contract.py`, `dashlet-registry.test.mjs`) |
+| CI | GitHub Actions (`.github/workflows/ci.yml`) — Ruff, Pytest, tool-schema drift check, `npm test` |
 | Dependency management | `uv` (Python), `npm` (Node) |
 
 ## 8. Quick start

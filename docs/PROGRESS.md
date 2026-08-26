@@ -17,7 +17,9 @@ Update this file at the end of each implementation block. Mark an item complete 
 
 ## Resume here
 
-The next developer should start with **Task 6** below before anything else in this repository. Before that, consider closing out task 5's open item: an independent review pass of the Portfolio Exposure dashlet (see Milestone 4 evidence above) — it was implemented but not yet independently reviewed.
+The next developer should start with **Task 6** below before anything else in this repository.
+
+Two items from task 5 remain deliberately open, not accidentally dropped: (1) an independent review pass of the Portfolio Exposure dashlet (see Milestone 4 evidence above), and (2) live-Canvas evidence for Portfolio Exposure (agent-tool invocation logs, tool-isolation checks, process-lifecycle checks, a Canvas-embedded screenshot — see `docs/evidence/portfolio-exposure-reference.md`). Both were explicitly deprioritized on 2026-08-26 to keep moving on Milestone 4's remaining business use cases rather than block on them; direct-FastAPI verification, the full automated test suite, and a real cross-verified browser screenshot already exist for Portfolio Exposure, so this is not "unverified," just "not yet verified inside an actual Canvas session." Revisit both once Portfolio Scenario Impact (or later) makes it worth doing a combined live-Canvas pass across multiple dashlets at once.
 
 **Recommended branch:** `feature/portfolio-scenario-impact`
 
