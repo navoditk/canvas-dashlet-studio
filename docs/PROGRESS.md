@@ -11,7 +11,7 @@ Update this file at the end of each implementation block. Mark an item complete 
 
 ## Current status
 
-- **Overall milestone status:** the Treasury Curve reference dashlet is complete through Milestone 3 (manual dashlet, Canvas local runtime, agent-tool bridge), including the explicit fixture/EOD provider-selection contract. CI, the shared `dashlet_framework` package, and generic OpenAPI-derived tool schemas (originally Resume-here tasks 1, 3 and 4) are now also done, ahead of task 2. Milestone 4 (agent-generated reuse: Portfolio Exposure, Scenario Impact, Issuer Research) has not started.
+- **Overall milestone status:** the Treasury Curve reference dashlet is complete through Milestone 3 (manual dashlet, Canvas local runtime, agent-tool bridge), including the explicit fixture/EOD provider-selection contract. CI, the shared `dashlet_framework` package, and generic OpenAPI-derived tool schemas (originally Resume-here tasks 1, 3 and 4) are now also done, ahead of task 2. Milestone 4's durable-instruction prerequisites (`AGENTS.md`, tool-specific files, the four contract docs) are now also done. Milestone 4's remaining work (Portfolio Exposure, Scenario Impact, Issuer Research) has not started.
 - **Latest validation date:** 2026-08-26.
 - **What works today:** Hello Dashlet and the Treasury Curve dashlet both run under the Dashlet Studio Canvas extension, now built on a shared `dashlet_framework` package (`create_dashlet_app`, `AGENT_TOOL_TAG`, `Provenance`, `DashletErrorDetail`/`DashletErrorResponse`) instead of duplicated per-dashlet boilerplate; both dashlets expose `/health` and `/metadata`. A user can switch between them, view either in the iframe, and ask Copilot to invoke their approved agent tools. Treasury exposes `get_treasury_curve`, `get_treasury_curve_slopes` and `compare_treasury_curves`, each requiring an explicit `data_mode` (`fixture` or `eod`) with no silent default and no fallback on EOD failure. The Canvas extension's agent-tool parameter schemas are now generated from each dashlet's real `app.openapi()` output by `scripts/generate_tool_schemas.py` (writing `.github/extensions/dashlet-studio/generated-tool-schemas.mjs`) rather than hand-maintained; CI fails if the committed generated file drifts from source. A GitHub Actions workflow (`.github/workflows/ci.yml`) runs Ruff, Pytest, the schema-drift check and the extension's `npm test` on every push/PR.
 
@@ -209,10 +209,10 @@ timeout setting, not a fixture-fallback defect).
 
 ## Milestone 4 — Agent-generated reuse
 
-- [ ] Canonical `AGENTS.md` created.
-- [ ] Tool-specific instructions reference canonical rules.
-- [ ] Creation workflow/skill created.
-- [ ] Review workflow/skill created.
+- [x] Canonical `AGENTS.md` created.
+- [x] Tool-specific instructions reference canonical rules.
+- [x] Creation workflow/skill created.
+- [x] Review workflow/skill created.
 - [ ] Portfolio Exposure generated using framework.
 - [ ] Portfolio Scenario Impact generated using framework.
 - [ ] Issuer Research generated or recorded as the first post-sprint extension.
@@ -220,7 +220,28 @@ timeout setting, not a fixture-fallback defect).
 - [ ] Independent reviews completed.
 - [ ] No application-specific framework changes were required, or changes were justified.
 
-Evidence:
+Evidence (durable instructions):
+
+```text
+Date: 2026-08-26
+Files added: AGENTS.md (canonical contract, root of repo); .github/copilot-instructions.md
+and CLAUDE.md (thin, point back to AGENTS.md per the "don't duplicate rules" principle in
+docs/AGENTIC_DEVELOPMENT.md §6); docs/DASHLET_CONTRACT.md, docs/DATA_ACCESS.md,
+docs/WEB_AUTHORING.md, docs/TOOL_AUTHORING.md (the four detailed contract docs referenced
+by the "Dashlet task" prompt template in docs/AGENTIC_DEVELOPMENT.md §8 but never written
+until now).
+Creation workflow: AGENTS.md §9 ("Definition of done for a new dashlet") plus the existing
+"Dashlet task" prompt template in docs/AGENTIC_DEVELOPMENT.md §8, now backed by the contract
+docs that template names.
+Review workflow: AGENTS.md §8 ("Review responsibility") plus the existing "Review task"
+prompt template in docs/AGENTIC_DEVELOPMENT.md §8 and the implementer/reviewer matrix in §10.
+Notes: written directly rather than as a separate Claude Code/Copilot skill file; the
+project's docs/AGENTIC_DEVELOPMENT.md §6 canonical-hierarchy design (AGENTS.md ->
+tool-specific files -> docs/*.md loaded when needed) is itself the "workflow," so no
+additional skill packaging was added on top of it.
+```
+
+Evidence (Portfolio Exposure / Scenario Impact):
 
 ```text
 Generation prompts:

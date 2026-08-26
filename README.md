@@ -17,10 +17,12 @@ This remains an ordinary client-server web architecture — a browser-rendered i
 - Dashlet Studio Canvas extension: select, start, stop, restart, and view diagnostics for either dashlet; only one dashlet process runs at a time.
 - Hello Dashlet: minimal end-to-end smoke test (`get_dashlet_summary` tool).
 - Treasury Curve dashlet: interactive yield curve, slopes and comparison views with explicit fixture/EOD data-mode selection.
-- Agent-tool bridge: only FastAPI operations tagged `agent-tool` and present in the extension's allowlist become Copilot tools; tool arguments are validated before any provider call; tools are isolated per active dashlet (Hello's tool is unavailable while Treasury is active, and vice versa).
-- Automated Python (`pytest`) and Node (`node --test`) test suites for the dashlet contract, providers, Canvas runtime, tool proxy and Treasury tool schemas.
+- A shared `dashlet_framework/` package (`create_dashlet_app`, the `agent-tool` tag constant, `Provenance`, and error-response models) so every dashlet reuses the same `/health` implementation, error shapes and provenance model instead of duplicating them.
+- Agent-tool bridge: only FastAPI operations tagged `agent-tool` and present in the extension's allowlist become Copilot tools; tool arguments are validated before any provider call; tools are isolated per active dashlet (Hello's tool is unavailable while Treasury is active, and vice versa). Tool parameter schemas are generated from each dashlet's real OpenAPI output (`scripts/generate_tool_schemas.py`), not hand-maintained.
+- CI (`.github/workflows/ci.yml`): Ruff, Pytest, a tool-schema drift check, and the Canvas extension's `npm test` run on every push/PR.
+- Automated Python (`pytest`) and Node (`node --test`) test suites for the dashlet contract, framework, providers, Canvas runtime, tool proxy and generated tool schemas.
 
-See [`docs/PROGRESS.md`](docs/PROGRESS.md) for the full milestone checklist, current status and the `## Resume here` section describing the next task.
+See [`docs/PROGRESS.md`](docs/PROGRESS.md) for the full milestone checklist, current status and the `## Resume here` section describing the next task, and [`AGENTS.md`](AGENTS.md) for the canonical contract any agent (or human) should follow when changing this repository.
 
 ## 4. Treasury reference application
 
@@ -81,6 +83,7 @@ curl "http://127.0.0.1:8765/api/treasury/curve?data_mode=fixture"
 ```bash
 uv run ruff check .
 uv run pytest
+uv run python scripts/generate_tool_schemas.py --check   # verify generated tool schemas aren't stale
 ```
 
 ```bash
@@ -88,7 +91,7 @@ cd .github/extensions/dashlet-studio
 npm test
 ```
 
-Current status of these commands against this branch is recorded in [`docs/evidence/treasury-reference.md`](docs/evidence/treasury-reference.md) — including a small number of pre-existing, out-of-scope failures that are called out explicitly rather than hidden.
+All four commands run in CI (`.github/workflows/ci.yml`) on every push and pull request. `docs/evidence/treasury-reference.md` has a historical snapshot of these commands from the Treasury milestone, including a small number of then-pre-existing failures that were called out explicitly and have since been fixed.
 
 ## 9. Opening Dashlet Studio Canvas
 
@@ -126,31 +129,42 @@ A genuine Canvas screenshot (EOD mode) is included above; see [`docs/evidence/tr
 ## 14. Repository structure
 
 ```text
+AGENTS.md                          Canonical instructions for any agent (or human) changing this repository
+dashlet_framework/                 Shared app factory, agent-tool tag constant, provenance/error models
 dashlets/                          Dashlet FastAPI applications (Hello, Treasury Curve) + Treasury provider
 fixtures/treasury/                 Deterministic Treasury fixture data
 tests/                             Python pytest suite
 tests/js/                          Node-based behavioral tests for the Treasury iframe client
-scripts/                           Manual/ad hoc verification scripts (not part of CI)
-.github/extensions/dashlet-studio/ Canvas extension: process launcher, tool proxy, control server
-docs/                              Installation, architecture, roadmap, progress and evidence documentation
+scripts/                           generate_tool_schemas.py (checked in CI) + manual/ad hoc verification scripts
+.github/extensions/dashlet-studio/ Canvas extension: process launcher, tool proxy, control server, generated tool schemas
+.github/workflows/                 CI: Ruff, Pytest, tool-schema drift check, npm test
+docs/                              Installation, architecture, roadmap, progress, contract and evidence documentation
 ```
 
 ## 15. Current limitations
 
 - Only Hello and Treasury Curve are implemented; Portfolio Exposure, Portfolio Scenario Impact and Issuer Research are future work.
-- No CI workflow exists yet in this repository.
+- Only one dashlet process runs at a time; there is no concurrent multi-dashlet or cross-dashlet composition view yet.
+- Dashlet registration (`DASHLET_REGISTRY` in `extension.mjs`) is manual; there is no auto-discovery yet.
 - No production sandbox, persistent artifact store, or production identity/authorization model.
 - No hosted gallery; all verification has been against locally spawned processes.
 - See [`docs/PROGRESS.md`](docs/PROGRESS.md) "Known limitations" for the complete list.
 
 ## 16. Roadmap
 
-See [`docs/ROADMAP.md`](docs/ROADMAP.md) for the staged execution plan and [`docs/PROGRESS.md`](docs/PROGRESS.md#resume-here) for the prioritized next task (adding CI for Ruff, Pytest and the Node test suite).
+See [`docs/ROADMAP.md`](docs/ROADMAP.md) for the staged execution plan and [`docs/PROGRESS.md`](docs/PROGRESS.md#resume-here) for the prioritized next task.
 
 ## 17. Documentation map
 
 | Document | Purpose |
 |---|---|
+| [`AGENTS.md`](AGENTS.md) | **Canonical** contract for any agent (or human) changing this repository — start here |
+| [`.github/copilot-instructions.md`](.github/copilot-instructions.md) | Copilot-specific notes; points back to `AGENTS.md` |
+| [`CLAUDE.md`](CLAUDE.md) | Claude-specific notes; points back to `AGENTS.md` |
+| [`docs/DASHLET_CONTRACT.md`](docs/DASHLET_CONTRACT.md) | The structural contract every dashlet file must satisfy |
+| [`docs/DATA_ACCESS.md`](docs/DATA_ACCESS.md) | Provider pattern, fixture-first development, provenance rules |
+| [`docs/WEB_AUTHORING.md`](docs/WEB_AUTHORING.md) | Alpine/Tailwind/Plotly patterns for a dashlet's embedded page |
+| [`docs/TOOL_AUTHORING.md`](docs/TOOL_AUTHORING.md) | How a dashlet operation becomes a Copilot agent tool |
 | [`INSTALL.md`](INSTALL.md) | Prerequisites and environment verification |
 | [`docs/PROPOSAL.md`](docs/PROPOSAL.md) | Original scope, deliverables and staged evolution |
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Component boundaries and end-to-end flows |
@@ -171,5 +185,5 @@ This is a public repository. Before committing or opening a pull request:
 - Never commit secrets, API keys or tokens; use an ignored `.env` for local-only values.
 - Use recorded fixtures instead of live external calls in tests and CI.
 - Keep dashlet endpoints restricted to registered providers; do not accept arbitrary URLs or shell commands from requests.
-- Run `uv run ruff check .`, `uv run pytest`, and `npm test` (from `.github/extensions/dashlet-studio`) before opening a pull request, and report any pre-existing failures honestly rather than silently working around them.
+- Run `uv run ruff check .`, `uv run pytest`, `uv run python scripts/generate_tool_schemas.py --check`, and `npm test` (from `.github/extensions/dashlet-studio`) before opening a pull request, and report any pre-existing failures honestly rather than silently working around them.
 - Avoid overstating readiness: this project is an MVP-stage reference implementation, not a production system.
