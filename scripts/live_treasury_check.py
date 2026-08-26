@@ -41,7 +41,7 @@ def main() -> None:
         print("(This date may be a weekend or holiday — try the previous business day.)")
         sys.exit(1)
 
-    print(f"\nProvenance:")
+    print("\nProvenance:")
     p = resp.provenance
     print(f"  source:           {p.source}")
     print(f"  data_mode:        {p.data_mode}")
@@ -54,7 +54,6 @@ def main() -> None:
         print(f"  {pt.maturity_label:>4}  {pt.yield_percent:.2f}%")
 
     # Sanity checks
-    labels = [pt.maturity_label for pt in resp.points]
     ten_year = next((pt for pt in resp.points if pt.maturity_label == "10Y"), None)
     assert len(resp.points) >= 10, f"Expected >=10 maturities, got {len(resp.points)}"
     assert ten_year is not None, "10Y maturity missing from live feed"

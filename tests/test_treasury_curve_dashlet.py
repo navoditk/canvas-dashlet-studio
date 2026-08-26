@@ -62,7 +62,9 @@ def test_curve_view_endpoint_returns_curve_and_slopes() -> None:
 
 
 def test_curve_endpoint_returns_typed_payload() -> None:
-    response = client.get("/api/treasury/curve", params={"date": "2026-08-19"})
+    response = client.get(
+        "/api/treasury/curve", params={"date": "2026-08-19", "data_mode": "fixture"}
+    )
     assert response.status_code == 200
     payload = response.json()
     assert payload["provenance"]["source"] == "synthetic-fixture"
@@ -78,7 +80,9 @@ def test_curve_endpoint_returns_typed_payload() -> None:
 
 
 def test_slopes_endpoint_returns_named_slopes() -> None:
-    response = client.get("/api/treasury/slopes", params={"date": "2026-08-19"})
+    response = client.get(
+        "/api/treasury/slopes", params={"date": "2026-08-19", "data_mode": "fixture"}
+    )
     assert response.status_code == 200
     payload = response.json()
     assert payload["observation_date"] == "2026-08-19"
@@ -88,7 +92,7 @@ def test_slopes_endpoint_returns_named_slopes() -> None:
 def test_compare_endpoint_returns_deterministic_deltas() -> None:
     response = client.get(
         "/api/treasury/compare",
-        params={"base_date": "2026-08-18", "compare_date": "2026-08-19"},
+        params={"base_date": "2026-08-18", "compare_date": "2026-08-19", "data_mode": "fixture"},
     )
     assert response.status_code == 200
     payload = response.json()
@@ -167,7 +171,9 @@ def test_openapi_operation_ids_and_agent_tool_tags() -> None:
 
 
 def test_unknown_fixture_date_returns_404() -> None:
-    response = client.get("/api/treasury/curve", params={"date": "2099-01-01"})
+    response = client.get(
+        "/api/treasury/curve", params={"date": "2099-01-01", "data_mode": "fixture"}
+    )
     assert response.status_code == 404
     detail = response.json()["detail"]
     assert detail["error_code"] == "fixture_not_found"
@@ -175,22 +181,24 @@ def test_unknown_fixture_date_returns_404() -> None:
 
 
 def test_curve_endpoint_rejects_invalid_date_format() -> None:
-    response = client.get("/api/treasury/curve", params={"date": "20260819"})
+    response = client.get(
+        "/api/treasury/curve", params={"date": "20260819", "data_mode": "fixture"}
+    )
     assert response.status_code == 422
     detail = response.json()["detail"]
     assert detail["error_code"] == "invalid_date"
-    assert "Invalid date" in detail["message"]
+    assert "Invalid observation date" in detail["message"]
 
 
 def test_compare_endpoint_rejects_invalid_calendar_date() -> None:
     response = client.get(
         "/api/treasury/compare",
-        params={"base_date": "2026-02-30", "compare_date": "2026-08-19"},
+        params={"base_date": "2026-02-30", "compare_date": "2026-08-19", "data_mode": "fixture"},
     )
     assert response.status_code == 422
     detail = response.json()["detail"]
     assert detail["error_code"] == "invalid_date"
-    assert "Invalid date" in detail["message"]
+    assert "Invalid observation date" in detail["message"]
 
 
 def test_compare_endpoint_requires_both_dates() -> None:
@@ -201,7 +209,7 @@ def test_compare_endpoint_requires_both_dates() -> None:
 
 
 def test_curve_endpoint_omitted_date_uses_latest_available_and_is_not_stale() -> None:
-    response = client.get("/api/treasury/curve")
+    response = client.get("/api/treasury/curve", params={"data_mode": "fixture"})
     assert response.status_code == 200
     payload = response.json()
     assert payload["provenance"]["observation_date"] == "2026-08-19"
@@ -209,14 +217,18 @@ def test_curve_endpoint_omitted_date_uses_latest_available_and_is_not_stale() ->
 
 
 def test_curve_endpoint_older_date_is_marked_stale() -> None:
-    response = client.get("/api/treasury/curve", params={"date": "2026-08-18"})
+    response = client.get(
+        "/api/treasury/curve", params={"date": "2026-08-18", "data_mode": "fixture"}
+    )
     assert response.status_code == 200
     payload = response.json()
     assert payload["provenance"]["is_stale"] is True
 
 
 def test_curve_endpoint_provenance_includes_timezone_aware_retrieved_at() -> None:
-    response = client.get("/api/treasury/curve", params={"date": "2026-08-19"})
+    response = client.get(
+        "/api/treasury/curve", params={"date": "2026-08-19", "data_mode": "fixture"}
+    )
     assert response.status_code == 200
     provenance = response.json()["provenance"]
     assert "retrieved_at" in provenance
@@ -242,7 +254,9 @@ def test_slopes_endpoint_missing_required_maturity_returns_controlled_422(monkey
     )
     monkeypatch.setattr(treasury_curve_dashlet, "FIXTURE_DIR", tmp_path)
 
-    response = client.get("/api/treasury/slopes", params={"date": "2030-01-01"})
+    response = client.get(
+        "/api/treasury/slopes", params={"date": "2030-01-01", "data_mode": "fixture"}
+    )
 
     assert response.status_code == 422
     detail = response.json()["detail"]
@@ -283,7 +297,7 @@ def test_compare_endpoint_mismatched_maturities_returns_controlled_422(monkeypat
 
     response = client.get(
         "/api/treasury/compare",
-        params={"base_date": "2030-02-01", "compare_date": "2030-02-02"},
+        params={"base_date": "2030-02-01", "compare_date": "2030-02-02", "data_mode": "fixture"},
     )
 
     assert response.status_code == 422
@@ -342,7 +356,7 @@ def test_root_page_contains_expanded_provenance_contract_tokens() -> None:
 def test_compare_endpoint_marks_stale_when_either_observation_date_is_not_latest() -> None:
     response = client.get(
         "/api/treasury/compare",
-        params={"base_date": "2026-08-18", "compare_date": "2026-08-19"},
+        params={"base_date": "2026-08-18", "compare_date": "2026-08-19", "data_mode": "fixture"},
     )
     assert response.status_code == 200
     payload = response.json()
@@ -352,7 +366,7 @@ def test_compare_endpoint_marks_stale_when_either_observation_date_is_not_latest
 def test_compare_endpoint_same_latest_dates_are_not_stale() -> None:
     response = client.get(
         "/api/treasury/compare",
-        params={"base_date": "2026-08-19", "compare_date": "2026-08-19"},
+        params={"base_date": "2026-08-19", "compare_date": "2026-08-19", "data_mode": "fixture"},
     )
     assert response.status_code == 200
     payload = response.json()

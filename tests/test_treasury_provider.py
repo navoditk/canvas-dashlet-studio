@@ -80,7 +80,7 @@ def test_normalize_to_curve_response_maps_provenance() -> None:
     ]
     resp = normalize_to_curve_response(days, "2026-08-19", "https://example.com/feed", retrieved)
     assert resp.provenance.source == "treasury-gov"
-    assert resp.provenance.data_mode == "live"
+    assert resp.provenance.data_mode == "eod"
     assert resp.provenance.is_stale is False
     assert resp.provenance.source_url == "https://example.com/feed"
     assert resp.provenance.retrieved_at == retrieved
@@ -175,7 +175,7 @@ def test_live_provider_provenance_fields_are_complete() -> None:
     resp = normalize_to_curve_response(days, "2026-08-19", source_url, retrieved)
     p = resp.provenance
     assert p.source == "treasury-gov"
-    assert p.data_mode == "live"
+    assert p.data_mode == "eod"
     assert p.observation_date == date(2026, 8, 19)
     assert p.retrieved_at is not None and p.retrieved_at.tzinfo is not None
     assert p.source_url is not None and p.source_url.startswith("https://")

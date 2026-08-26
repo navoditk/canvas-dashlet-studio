@@ -7,6 +7,7 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 
+from dashlets.treasury_provider import ProviderError, TreasuryDataMode, resolve_provider
 from treasury_fixture import (
     CurveComparisonPoint,
     CurveSlope,
@@ -17,7 +18,6 @@ from treasury_fixture import (
     load_fixture,
     to_curve_response,
 )
-from dashlets.treasury_provider import ProviderError, TreasuryDataMode, resolve_provider
 
 FIXTURE_DIR = Path(__file__).resolve().parents[1] / "fixtures" / "treasury"
 DATE_EXAMPLES = ["2026-08-19"]
@@ -97,6 +97,9 @@ def _required_data_mode_query():
     description="Required treasury data mode. Allowed values: fixture, eod.",
     examples=["fixture"],
   )
+
+
+_DATA_MODE_QUERY = _required_data_mode_query()
 
 
 def _fixture_path_for_date(observation_date: str) -> Path:
@@ -751,7 +754,7 @@ def get_treasury_curve_view(
 )
 def get_treasury_curve(
     date: str | None = _optional_date_query(description=OBSERVATION_DATE_DESCRIPTION),
-    data_mode: TreasuryDataMode = _required_data_mode_query(),
+    data_mode: TreasuryDataMode = _DATA_MODE_QUERY,
 ) -> TreasuryCurveResponse:
     resolved_date = _resolve_observation_date_str(date)
     provider = resolve_provider(data_mode, FIXTURE_DIR)
@@ -779,7 +782,7 @@ def get_treasury_curve(
 )
 def get_curve_slopes(
     date: str | None = _optional_date_query(description=OBSERVATION_DATE_DESCRIPTION),
-    data_mode: TreasuryDataMode = _required_data_mode_query(),
+    data_mode: TreasuryDataMode = _DATA_MODE_QUERY,
 ) -> TreasuryCurveSlopesResponse:
     resolved_date = _resolve_observation_date_str(date)
     provider = resolve_provider(data_mode, FIXTURE_DIR)
@@ -814,7 +817,7 @@ def get_curve_slopes(
 def compare_treasury_curves(
     base_date: str = _required_date_query(description=BASE_DATE_DESCRIPTION),
     compare_date: str = _required_date_query(description=COMPARE_DATE_DESCRIPTION),
-    data_mode: TreasuryDataMode = _required_data_mode_query(),
+    data_mode: TreasuryDataMode = _DATA_MODE_QUERY,
 ) -> TreasuryCurveComparisonResponse:
     provider = resolve_provider(data_mode, FIXTURE_DIR)
     try:

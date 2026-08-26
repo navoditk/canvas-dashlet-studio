@@ -9,7 +9,13 @@ from typing import Protocol
 
 import httpx
 
-from treasury_fixture import CurvePoint, Provenance, TreasuryCurveResponse, load_fixture, to_curve_response
+from treasury_fixture import (
+    CurvePoint,
+    Provenance,
+    TreasuryCurveResponse,
+    load_fixture,
+    to_curve_response,
+)
 
 # Feed URL. Month is substituted at call time: YYYYMM format.
 TREASURY_FEED_URL = (
@@ -143,7 +149,7 @@ def parse_treasury_feed(xml_text: str, source_url: str) -> list[ParsedCurveDay]:
 def _parse_observation_date(observation_date_str: str) -> date:
     # strptime enforces strict YYYY-MM-DD; fromisoformat accepts YYYYMMDD in Python 3.11+
     try:
-        return datetime.strptime(observation_date_str, "%Y-%m-%d").date()
+        return datetime.strptime(observation_date_str, "%Y-%m-%d").replace(tzinfo=UTC).date()
     except ValueError as exc:
         raise ProviderError(
             "invalid_date",
