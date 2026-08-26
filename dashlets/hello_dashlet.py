@@ -2,9 +2,11 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
-from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
+
+from dashlet_framework import AGENT_TOOL_TAG
+from dashlet_framework.app import create_dashlet_app
 
 
 class DashletSummary(BaseModel):
@@ -15,7 +17,14 @@ class DashletSummary(BaseModel):
     data_mode: str
 
 
-app = FastAPI(title="Hello Dashlet", version="0.1.0")
+class HelloDashletMetadataResponse(BaseModel):
+    title: str
+    version: str
+    data_mode: str
+    supported_endpoints: list[str]
+
+
+app = create_dashlet_app(title="Hello Dashlet", version="0.1.0")
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -65,15 +74,27 @@ def index() -> str:
 """
 
 
-@app.get("/health")
-def health() -> dict[str, str]:
-    return {"status": "ready"}
+@app.get(
+    "/metadata",
+    operation_id="get_hello_dashlet_metadata",
+    summary="Get Hello Dashlet Metadata",
+    description="Return deterministic metadata describing this dashlet's identity and supported routes.",
+    response_description="Typed Hello dashlet metadata.",
+    response_model=HelloDashletMetadataResponse,
+)
+def metadata() -> HelloDashletMetadataResponse:
+    return HelloDashletMetadataResponse(
+        title=app.title,
+        version=app.version,
+        data_mode="fixture",
+        supported_endpoints=["/api/summary"],
+    )
 
 
 @app.get(
     "/api/summary",
     operation_id="get_dashlet_summary",
-    tags=["agent-tool"],
+    tags=[AGENT_TOOL_TAG],
     response_model=DashletSummary,
 )
 def get_summary() -> DashletSummary:

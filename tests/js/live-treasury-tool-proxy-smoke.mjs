@@ -4,8 +4,8 @@
 // verification of the explicit provider-selection contract end-to-end.
 import { ToolProxy, selectApprovedOperations } from "../../.github/extensions/dashlet-studio/tool-proxy.mjs";
 import {
-    TREASURY_TOOL_PARAMETER_SCHEMAS,
-} from "../../.github/extensions/dashlet-studio/treasury-tool-schemas.mjs";
+    AGENT_TOOL_PARAMETER_SCHEMAS,
+} from "../../.github/extensions/dashlet-studio/generated-tool-schemas.mjs";
 
 const BASE_URL = process.env.TREASURY_BASE_URL || "http://127.0.0.1:8791";
 
@@ -35,7 +35,7 @@ async function main() {
     console.log("1) Approved operations after live refresh:", refreshInfo.approvedOperationIds);
 
     console.log("\n2) Agent-visible tool schema for get_treasury_curve (data_mode enum):");
-    console.log(JSON.stringify(TREASURY_TOOL_PARAMETER_SCHEMAS.get_treasury_curve, null, 2));
+    console.log(JSON.stringify(AGENT_TOOL_PARAMETER_SCHEMAS.get_treasury_curve, null, 2));
 
     console.log("\n3) Canvas fixture-mode invocation (get_treasury_curve, data_mode=fixture, date=2026-08-19):");
     try {

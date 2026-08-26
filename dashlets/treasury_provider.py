@@ -9,9 +9,9 @@ from typing import Protocol
 
 import httpx
 
+from dashlet_framework import Provenance
 from treasury_fixture import (
     CurvePoint,
-    Provenance,
     TreasuryCurveResponse,
     load_fixture,
     to_curve_response,

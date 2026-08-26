@@ -11,26 +11,20 @@ Update this file at the end of each implementation block. Mark an item complete 
 
 ## Current status
 
-- **Overall milestone status:** the Treasury Curve reference dashlet is complete through Milestone 3 (manual dashlet, Canvas local runtime, agent-tool bridge), including the explicit fixture/EOD provider-selection contract. Milestone 4 (agent-generated reuse) has not started.
-- **Current branch/commit:** `navoditk-automatic-lamp`, built directly on `navoditk-treasury-curve-reference` at `5b0bcf7` ("Add explicit Treasury fixture and EOD modes"), with `1286475` ("Complete Treasury mode-aware Canvas workflow") on top.
-- **Latest validation date:** 2026-08-21. See [`docs/evidence/treasury-reference.md`](evidence/treasury-reference.md) for full command output and live Canvas verification.
-- **What works today:** Hello Dashlet and the Treasury Curve dashlet both run under the Dashlet Studio Canvas extension; a user can switch between them, view either in the iframe, and ask Copilot to invoke their approved agent tools. Treasury exposes `get_treasury_curve`, `get_treasury_curve_slopes` and `compare_treasury_curves`, each requiring an explicit `data_mode` (`fixture` or `eod`) with no silent default and no fallback on EOD failure. Switching the iframe's Data Mode control refreshes curve, slopes, comparison (when both dates are selected) and provenance together, guarded against out-of-order responses.
+- **Overall milestone status:** the Treasury Curve reference dashlet is complete through Milestone 3 (manual dashlet, Canvas local runtime, agent-tool bridge), including the explicit fixture/EOD provider-selection contract. CI, the shared `dashlet_framework` package, and generic OpenAPI-derived tool schemas (originally Resume-here tasks 1, 3 and 4) are now also done, ahead of task 2. Milestone 4 (agent-generated reuse: Portfolio Exposure, Scenario Impact, Issuer Research) has not started.
+- **Latest validation date:** 2026-08-26.
+- **What works today:** Hello Dashlet and the Treasury Curve dashlet both run under the Dashlet Studio Canvas extension, now built on a shared `dashlet_framework` package (`create_dashlet_app`, `AGENT_TOOL_TAG`, `Provenance`, `DashletErrorDetail`/`DashletErrorResponse`) instead of duplicated per-dashlet boilerplate; both dashlets expose `/health` and `/metadata`. A user can switch between them, view either in the iframe, and ask Copilot to invoke their approved agent tools. Treasury exposes `get_treasury_curve`, `get_treasury_curve_slopes` and `compare_treasury_curves`, each requiring an explicit `data_mode` (`fixture` or `eod`) with no silent default and no fallback on EOD failure. The Canvas extension's agent-tool parameter schemas are now generated from each dashlet's real `app.openapi()` output by `scripts/generate_tool_schemas.py` (writing `.github/extensions/dashlet-studio/generated-tool-schemas.mjs`) rather than hand-maintained; CI fails if the committed generated file drifts from source. A GitHub Actions workflow (`.github/workflows/ci.yml`) runs Ruff, Pytest, the schema-drift check and the extension's `npm test` on every push/PR.
 
 ## Resume here
 
-The next developer should start with **Task 1** below before anything else in this repository.
+The next developer should start with **Task 2** below before anything else in this repository.
 
-**Recommended branch:** `feature/ci-contract-validation`
+**Recommended branch:** `feature/contract-validation`
 
-1. **Add GitHub Actions for Ruff, Pytest and Node tests.**
-   - **Objective:** give this repository automated CI so `ruff`, `pytest` and the Canvas extension's `npm test` run on every push/PR, instead of only being run manually.
-   - **Files likely to change:** new `.github/workflows/ci.yml` (or similar); no dashlet or extension source files should need to change.
-   - **Definition of done:** a workflow runs `uv sync`, `uv run ruff check .`, `uv run pytest`, and `npm test` from `.github/extensions/dashlet-studio` on push and pull_request; the workflow is green on a clean checkout of this branch's baseline (the 15 pre-existing Python test failures and 9 pre-existing ruff findings noted below are a known baseline, not a regression to silently fix as part of this task — surface them honestly in the CI result, then open a separate follow-up if they should be fixed).
-   - **Commands to run:** `uv sync`; `uv run ruff check .`; `uv run pytest`; `npm test` (from `.github/extensions/dashlet-studio`); confirm the new workflow file is valid YAML and matches these exact commands.
-   - **Non-goals:** do not fix the pre-existing 15 pytest failures or 9 ruff findings as part of this task; do not add deployment/publication steps; do not change any dashlet or provider behavior.
-2. Add reusable dashlet/OpenAPI contract validation.
-3. Extract the reusable framework from the repeated Hello and Treasury patterns.
-4. Replace the Treasury-specific Canvas schema bridge (`treasury-tool-schemas.mjs`) with generic approved OpenAPI-to-capability schema generation.
+1. ~~Add GitHub Actions for Ruff, Pytest and Node tests.~~ Done — see `.github/workflows/ci.yml`.
+2. **Add reusable dashlet/OpenAPI contract validation** (still open — e.g. a script/test asserting every registered dashlet exposes `/health` and `/metadata`, every `agent-tool`-tagged operation has a `response_model` and a unique `operationId`, and untagged routes are never in the Canvas allowlist).
+3. ~~Extract the reusable framework from the repeated Hello and Treasury patterns.~~ Done — see `dashlet_framework/` (`app.py`, `models.py`).
+4. ~~Replace the Treasury-specific Canvas schema bridge (`treasury-tool-schemas.mjs`) with generic approved OpenAPI-to-capability schema generation.~~ Done — see `scripts/generate_tool_schemas.py` and `.github/extensions/dashlet-studio/generated-tool-schemas.mjs`.
 5. Build Portfolio Exposure and Concentration using the framework.
 6. Build Portfolio Scenario Impact using the framework.
 7. Add Issuer Research as a later use case.

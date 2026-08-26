@@ -28,6 +28,9 @@ jobs:
       - name: Pytest
         run: uv run pytest
 
+      - name: Verify generated tool schemas are up to date
+        run: uv run python scripts/generate_tool_schemas.py --check
+
   extension:
     name: Canvas extension (npm test)
     runs-on: ubuntu-latest

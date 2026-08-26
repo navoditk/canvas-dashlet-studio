@@ -6,6 +6,8 @@ from pathlib import Path
 
 from pydantic import BaseModel, Field, field_validator
 
+from dashlet_framework import Provenance
+
 # Fixed canonical maturity order (not lexicographic). Ordering is looked up by
 # label so that a bad or inconsistent `maturity_years` value in a fixture
 # cannot silently reorder the curve.
@@ -18,14 +20,6 @@ CANONICAL_MATURITY_ORDER: list[str] = [
 class FixtureMeta(BaseModel):
     note:str
     data_mode:str
-
-class Provenance(BaseModel):
-    source: str
-    source_url: str | None = None
-    observation_date: date
-    retrieved_at: datetime
-    data_mode: str
-    is_stale: bool
 
 class CurvePoint(BaseModel):
     maturity_label:str

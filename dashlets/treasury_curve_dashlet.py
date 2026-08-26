@@ -3,15 +3,16 @@ from __future__ import annotations
 from datetime import UTC, date, datetime
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import HTTPException, Query
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 
+from dashlet_framework import AGENT_TOOL_TAG, DashletErrorResponse, Provenance
+from dashlet_framework.app import create_dashlet_app
 from dashlets.treasury_provider import ProviderError, TreasuryDataMode, resolve_provider
 from treasury_fixture import (
     CurveComparisonPoint,
     CurveSlope,
-    Provenance,
     TreasuryCurveResponse,
     compare_curves,
     compute_curve_slopes,
@@ -63,16 +64,7 @@ class TreasuryDashletMetadataResponse(BaseModel):
     available_fixture_dates: list[str]
 
 
-class DashletErrorDetail(BaseModel):
-    error_code: str
-    message: str
-
-
-class DashletErrorResponse(BaseModel):
-    detail: DashletErrorDetail
-
-
-app = FastAPI(title="Treasury Curve Dashlet", version="0.1.0")
+app = create_dashlet_app(title="Treasury Curve Dashlet", version="0.1.0")
 
 
 def _optional_date_query(description: str):
@@ -670,11 +662,6 @@ def index() -> str:
 """
 
 
-@app.get("/health")
-def health() -> dict[str, str]:
-    return {"status": "ready"}
-
-
 @app.get(
     "/metadata",
     operation_id="get_treasury_dashlet_metadata",
@@ -742,7 +729,7 @@ def get_treasury_curve_view(
 @app.get(
     "/api/treasury/curve",
     operation_id="get_treasury_curve",
-    tags=["agent-tool"],
+    tags=[AGENT_TOOL_TAG],
     summary="Get Treasury Curve",
     description="Return a deterministic fixture-backed Treasury curve for a single observation date.",
     response_description="Typed Treasury curve points and provenance.",
@@ -767,7 +754,7 @@ def get_treasury_curve(
 @app.get(
     "/api/treasury/slopes",
     operation_id="get_treasury_curve_slopes",
-    tags=["agent-tool"],
+    tags=[AGENT_TOOL_TAG],
     summary="Get Canonical Curve Slopes",
     description="Return deterministic canonical slope pairs (2s10s, 3m10y and 5s30s) for one observation date.",
     response_description="Canonical slope metrics with provenance.",
@@ -801,7 +788,7 @@ def get_curve_slopes(
 @app.get(
     "/api/treasury/compare",
     operation_id="compare_treasury_curves",
-    tags=["agent-tool"],
+    tags=[AGENT_TOOL_TAG],
     summary="Compare Treasury Curves",
     description="Compare two deterministic fixture-backed Treasury curves and return maturity-level basis-point deltas.",
     response_description="Per-maturity curve comparison points with provenance.",

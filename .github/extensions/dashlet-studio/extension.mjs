@@ -4,7 +4,20 @@ import { DashletRuntime } from "./dashlet-runtime.mjs";
 import { ToolProxy } from "./tool-proxy.mjs";
 import { createControlApiHandler, createControlToken, renderCanvasPage } from "./control-server.mjs";
 import { installProcessCleanupHandlers } from "./process-cleanup.mjs";
-import { TREASURY_TOOL_PARAMETER_SCHEMAS, DEFAULT_TOOL_PARAMETER_SCHEMA } from "./treasury-tool-schemas.mjs";
+import { AGENT_TOOL_PARAMETER_SCHEMAS } from "./generated-tool-schemas.mjs";
+
+// Defensive fallback only: every operationId in REGISTERED_TOOL_IDS is
+// expected to have a generated entry in AGENT_TOOL_PARAMETER_SCHEMAS (see
+// the drift-guard test in generated-tool-schemas.test.mjs). This exists so a
+// future operationId that is approved in DASHLET_REGISTRY before its schema
+// is regenerated fails safe (accepts nothing) rather than not registering at
+// all.
+const DEFAULT_TOOL_PARAMETER_SCHEMA = Object.freeze({
+    type: "object",
+    additionalProperties: false,
+    required: Object.freeze([]),
+    properties: Object.freeze({}),
+});
 
 const DASHLET_REGISTRY = Object.freeze({
     hello: Object.freeze({
@@ -205,7 +218,7 @@ const session = await joinSession({
     tools: REGISTERED_TOOL_IDS.map((operationId) => ({
         name: operationId,
         description: TOOL_DESCRIPTIONS[operationId] ?? `Proxy approved dashlet operation "${operationId}".`,
-        parameters: TREASURY_TOOL_PARAMETER_SCHEMAS[operationId] ?? DEFAULT_TOOL_PARAMETER_SCHEMA,
+        parameters: AGENT_TOOL_PARAMETER_SCHEMAS[operationId] ?? DEFAULT_TOOL_PARAMETER_SCHEMA,
         handler: async (args) => {
             try {
                 await ensureRuntimeReady();

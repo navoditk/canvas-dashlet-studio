@@ -41,3 +41,21 @@ def test_openapi_summary_operation_metadata() -> None:
     operation = openapi["paths"]["/api/summary"]["get"]
     assert operation["operationId"] == "get_dashlet_summary"
     assert "agent-tool" in operation["tags"]
+
+
+def test_metadata_route_shape() -> None:
+    response = client.get("/metadata")
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["title"] == "Hello Dashlet"
+    assert payload["version"] == "0.1.0"
+    assert payload["data_mode"] == "fixture"
+    assert payload["supported_endpoints"] == ["/api/summary"]
+
+
+def test_metadata_route_is_not_an_agent_tool() -> None:
+    response = client.get("/openapi.json")
+    assert response.status_code == 200
+    openapi = response.json()
+    operation = openapi["paths"]["/metadata"]["get"]
+    assert "tags" not in operation or "agent-tool" not in operation.get("tags", [])
