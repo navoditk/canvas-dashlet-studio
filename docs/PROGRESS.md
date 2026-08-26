@@ -60,6 +60,7 @@ The next developer should start with **Task 6** below before anything else in th
 - Relevant tests: `tests/test_treasury_curve_dashlet.py`, `tests/test_treasury_provider.py`, `.github/extensions/dashlet-studio/treasury-tool-schemas.test.mjs`, `.github/extensions/dashlet-studio/tool-proxy.test.mjs`, `tests/js/treasury-client-mode.test.mjs`.
 - Relevant architecture sections: [`docs/ARCHITECTURE.md`](ARCHITECTURE.md) §4 "Interactive data flow", §5 "Agent-tool flow".
 - Commits: `5546e38`, `8dfd497`, `fb7085f`, `ed78a6c`, `5b0bcf7`, `1286475` (all on `navoditk-treasury-curve-reference` / `navoditk-automatic-lamp`; not yet merged to `main`). Pull request: to be opened per this session's task (see report).
+- [`docs/evidence/portfolio-exposure-reference.md`](evidence/portfolio-exposure-reference.md) — direct-FastAPI verification, fixture-mode results, provenance examples and test summaries are complete; live-Canvas evidence (agent-tool invocation logs, tool-isolation negative tests, process-lifecycle results, screenshot) is explicitly marked TODO — no browser tool was connected in the session that built this dashlet. Commit: `da18bce`.
 
 ## Known limitations
 

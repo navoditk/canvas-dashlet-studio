@@ -148,7 +148,7 @@ See [`docs/evidence/treasury-reference.md`](docs/evidence/treasury-reference.md)
 
 ![Treasury Curve Monitor in EOD mode](docs/evidence/images/treasury-canvas-eod.png)
 
-A genuine Canvas screenshot (EOD mode) is included above; see [`docs/evidence/treasury-reference.md`](docs/evidence/treasury-reference.md#screenshot) for capture details and provenance. Portfolio Exposure has been verified via real `uvicorn` process boots, direct endpoint checks, and the full `pytest`/`npm test` suites (see `docs/PROGRESS.md`), but does not yet have a captured Canvas screenshot or live browser interaction recorded — no browser tooling was available in the session that built it.
+A genuine Canvas screenshot (EOD mode) is included above; see [`docs/evidence/treasury-reference.md`](docs/evidence/treasury-reference.md#screenshot) for capture details and provenance. Portfolio Exposure's evidence record is [`docs/evidence/portfolio-exposure-reference.md`](docs/evidence/portfolio-exposure-reference.md) — direct-FastAPI verification and test summaries are complete, but live-Canvas evidence (agent-tool invocation logs, tool-isolation checks, process-lifecycle checks, and a screenshot) is explicitly marked TODO with step-by-step instructions, since no browser tooling was available in the session that built it.
 
 ## 16. Repository structure
 
@@ -202,6 +202,7 @@ See [`docs/ROADMAP.md`](docs/ROADMAP.md) for the staged execution plan and [`doc
 | [`docs/AGENTIC_DEVELOPMENT.md`](docs/AGENTIC_DEVELOPMENT.md) | How coding agents should be used on this project |
 | [`docs/PROGRESS.md`](docs/PROGRESS.md) | Milestone checklist, current status and "Resume here" |
 | [`docs/evidence/treasury-reference.md`](docs/evidence/treasury-reference.md) | Treasury milestone validation evidence |
+| [`docs/evidence/portfolio-exposure-reference.md`](docs/evidence/portfolio-exposure-reference.md) | Portfolio Exposure validation evidence (live-Canvas sections still TODO) |
 | [`docs/REFERENCES.md`](docs/REFERENCES.md) | Verified external documentation and learning references |
 
 ## 20. References
