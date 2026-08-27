@@ -110,10 +110,20 @@ class PublicIssuerProvider:
             raise ProviderError("ticker_not_found", f"No SEC-registered company found for ticker: {ticker}")
         return cik
 
-    def get_snapshot(self, ticker: str) -> IssuerSnapshotResult:
+    def fetch_raw(self, ticker: str) -> tuple[str, dict, dict]:
+        """Returns (cik, submissions_json, company_facts_json) without
+        wrapping into an IssuerSnapshotResult. get_snapshot() uses this
+        internally; scripts/generate_issuer_fixtures.py also calls it
+        directly so fixture generation shares this exact fetch path rather
+        than re-implementing it.
+        """
         cik = self._ticker_to_cik(ticker)
         submissions = _fetch_json(_SUBMISSIONS_URL_TEMPLATE.format(cik=cik))
         company_facts = _fetch_json(_COMPANY_FACTS_URL_TEMPLATE.format(cik=cik))
+        return cik, submissions, company_facts
+
+    def get_snapshot(self, ticker: str) -> IssuerSnapshotResult:
+        cik, submissions, company_facts = self.fetch_raw(ticker)
 
         snapshot = build_snapshot_from_live_json(
             submissions_json=submissions, company_facts_json=company_facts, data_mode="live"

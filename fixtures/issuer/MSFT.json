@@ -1,0 +1,328 @@
+{
+  "cik": "0000789019",
+  "ticker": "MSFT",
+  "company_name": "MICROSOFT CORP",
+  "sic": "7372",
+  "sic_description": "Services-Prepackaged Software",
+  "revenue_concept": "RevenueFromContractWithCustomerExcludingAssessedTax",
+  "periods": [
+    {
+      "period_end": "2022-06-30",
+      "revenue": {
+        "period_end": "2022-06-30",
+        "period_start": "2021-07-01",
+        "value": 198270000000.0,
+        "accession_number": "0000950170-24-087843",
+        "filed": "2024-07-30",
+        "fiscal_year": 2024
+      },
+      "operating_income": {
+        "period_end": "2022-06-30",
+        "period_start": "2021-07-01",
+        "value": 83383000000.0,
+        "accession_number": "0000950170-24-087843",
+        "filed": "2024-07-30",
+        "fiscal_year": 2024
+      },
+      "operating_cash_flow": {
+        "period_end": "2022-06-30",
+        "period_start": "2021-07-01",
+        "value": 89035000000.0,
+        "accession_number": "0000950170-24-087843",
+        "filed": "2024-07-30",
+        "fiscal_year": 2024
+      },
+      "total_assets": {
+        "period_end": "2022-06-30",
+        "period_start": null,
+        "value": 364840000000.0,
+        "accession_number": "0000950170-23-035122",
+        "filed": "2023-07-27",
+        "fiscal_year": 2023
+      },
+      "total_liabilities": {
+        "period_end": "2022-06-30",
+        "period_start": null,
+        "value": 198298000000.0,
+        "accession_number": "0000950170-23-035122",
+        "filed": "2023-07-27",
+        "fiscal_year": 2023
+      },
+      "stockholders_equity": {
+        "period_end": "2022-06-30",
+        "period_start": null,
+        "value": 166542000000.0,
+        "accession_number": "0000950170-24-087843",
+        "filed": "2024-07-30",
+        "fiscal_year": 2024
+      }
+    },
+    {
+      "period_end": "2023-06-30",
+      "revenue": {
+        "period_end": "2023-06-30",
+        "period_start": "2022-07-01",
+        "value": 211915000000.0,
+        "accession_number": "0000950170-25-100235",
+        "filed": "2025-07-30",
+        "fiscal_year": 2025
+      },
+      "operating_income": {
+        "period_end": "2023-06-30",
+        "period_start": "2022-07-01",
+        "value": 88523000000.0,
+        "accession_number": "0000950170-25-100235",
+        "filed": "2025-07-30",
+        "fiscal_year": 2025
+      },
+      "operating_cash_flow": {
+        "period_end": "2023-06-30",
+        "period_start": "2022-07-01",
+        "value": 87582000000.0,
+        "accession_number": "0000950170-25-100235",
+        "filed": "2025-07-30",
+        "fiscal_year": 2025
+      },
+      "total_assets": {
+        "period_end": "2023-06-30",
+        "period_start": null,
+        "value": 411976000000.0,
+        "accession_number": "0000950170-24-087843",
+        "filed": "2024-07-30",
+        "fiscal_year": 2024
+      },
+      "total_liabilities": {
+        "period_end": "2023-06-30",
+        "period_start": null,
+        "value": 205753000000.0,
+        "accession_number": "0000950170-24-087843",
+        "filed": "2024-07-30",
+        "fiscal_year": 2024
+      },
+      "stockholders_equity": {
+        "period_end": "2023-06-30",
+        "period_start": null,
+        "value": 206223000000.0,
+        "accession_number": "0000950170-25-100235",
+        "filed": "2025-07-30",
+        "fiscal_year": 2025
+      }
+    },
+    {
+      "period_end": "2024-06-30",
+      "revenue": {
+        "period_end": "2024-06-30",
+        "period_start": "2023-07-01",
+        "value": 245122000000.0,
+        "accession_number": "0001193125-26-323660",
+        "filed": "2026-07-29",
+        "fiscal_year": 2026
+      },
+      "operating_income": {
+        "period_end": "2024-06-30",
+        "period_start": "2023-07-01",
+        "value": 109433000000.0,
+        "accession_number": "0001193125-26-323660",
+        "filed": "2026-07-29",
+        "fiscal_year": 2026
+      },
+      "operating_cash_flow": {
+        "period_end": "2024-06-30",
+        "period_start": "2023-07-01",
+        "value": 118548000000.0,
+        "accession_number": "0001193125-26-323660",
+        "filed": "2026-07-29",
+        "fiscal_year": 2026
+      },
+      "total_assets": {
+        "period_end": "2024-06-30",
+        "period_start": null,
+        "value": 512163000000.0,
+        "accession_number": "0000950170-25-100235",
+        "filed": "2025-07-30",
+        "fiscal_year": 2025
+      },
+      "total_liabilities": {
+        "period_end": "2024-06-30",
+        "period_start": null,
+        "value": 243686000000.0,
+        "accession_number": "0000950170-25-100235",
+        "filed": "2025-07-30",
+        "fiscal_year": 2025
+      },
+      "stockholders_equity": {
+        "period_end": "2024-06-30",
+        "period_start": null,
+        "value": 268477000000.0,
+        "accession_number": "0001193125-26-323660",
+        "filed": "2026-07-29",
+        "fiscal_year": 2026
+      }
+    },
+    {
+      "period_end": "2025-06-30",
+      "revenue": {
+        "period_end": "2025-06-30",
+        "period_start": "2024-07-01",
+        "value": 281724000000.0,
+        "accession_number": "0001193125-26-323660",
+        "filed": "2026-07-29",
+        "fiscal_year": 2026
+      },
+      "operating_income": {
+        "period_end": "2025-06-30",
+        "period_start": "2024-07-01",
+        "value": 128528000000.0,
+        "accession_number": "0001193125-26-323660",
+        "filed": "2026-07-29",
+        "fiscal_year": 2026
+      },
+      "operating_cash_flow": {
+        "period_end": "2025-06-30",
+        "period_start": "2024-07-01",
+        "value": 136162000000.0,
+        "accession_number": "0001193125-26-323660",
+        "filed": "2026-07-29",
+        "fiscal_year": 2026
+      },
+      "total_assets": {
+        "period_end": "2025-06-30",
+        "period_start": null,
+        "value": 619003000000.0,
+        "accession_number": "0001193125-26-323660",
+        "filed": "2026-07-29",
+        "fiscal_year": 2026
+      },
+      "total_liabilities": {
+        "period_end": "2025-06-30",
+        "period_start": null,
+        "value": 275524000000.0,
+        "accession_number": "0001193125-26-323660",
+        "filed": "2026-07-29",
+        "fiscal_year": 2026
+      },
+      "stockholders_equity": {
+        "period_end": "2025-06-30",
+        "period_start": null,
+        "value": 343479000000.0,
+        "accession_number": "0001193125-26-323660",
+        "filed": "2026-07-29",
+        "fiscal_year": 2026
+      }
+    },
+    {
+      "period_end": "2026-06-30",
+      "revenue": {
+        "period_end": "2026-06-30",
+        "period_start": "2025-07-01",
+        "value": 331839000000.0,
+        "accession_number": "0001193125-26-323660",
+        "filed": "2026-07-29",
+        "fiscal_year": 2026
+      },
+      "operating_income": {
+        "period_end": "2026-06-30",
+        "period_start": "2025-07-01",
+        "value": 155237000000.0,
+        "accession_number": "0001193125-26-323660",
+        "filed": "2026-07-29",
+        "fiscal_year": 2026
+      },
+      "operating_cash_flow": {
+        "period_end": "2026-06-30",
+        "period_start": "2025-07-01",
+        "value": 182935000000.0,
+        "accession_number": "0001193125-26-323660",
+        "filed": "2026-07-29",
+        "fiscal_year": 2026
+      },
+      "total_assets": {
+        "period_end": "2026-06-30",
+        "period_start": null,
+        "value": 758376000000.0,
+        "accession_number": "0001193125-26-323660",
+        "filed": "2026-07-29",
+        "fiscal_year": 2026
+      },
+      "total_liabilities": {
+        "period_end": "2026-06-30",
+        "period_start": null,
+        "value": 315989000000.0,
+        "accession_number": "0001193125-26-323660",
+        "filed": "2026-07-29",
+        "fiscal_year": 2026
+      },
+      "stockholders_equity": {
+        "period_end": "2026-06-30",
+        "period_start": null,
+        "value": 442387000000.0,
+        "accession_number": "0001193125-26-323660",
+        "filed": "2026-07-29",
+        "fiscal_year": 2026
+      }
+    }
+  ],
+  "filings": [
+    {
+      "form": "10-K",
+      "filing_date": "2026-07-29",
+      "report_date": "2026-06-30",
+      "accession_number": "0001193125-26-323660",
+      "primary_document": "msft-20260630.htm"
+    },
+    {
+      "form": "8-K",
+      "filing_date": "2026-07-29",
+      "report_date": "2026-07-29",
+      "accession_number": "0001193125-26-323632",
+      "primary_document": "msft-20260729.htm"
+    },
+    {
+      "form": "8-K",
+      "filing_date": "2026-06-05",
+      "report_date": "2026-06-02",
+      "accession_number": "0001193125-26-258667",
+      "primary_document": "d26760d8k.htm"
+    },
+    {
+      "form": "8-K",
+      "filing_date": "2026-05-14",
+      "report_date": "2026-05-13",
+      "accession_number": "0001193125-26-224155",
+      "primary_document": "d125909d8k.htm"
+    },
+    {
+      "form": "10-Q",
+      "filing_date": "2026-04-29",
+      "report_date": "2026-03-31",
+      "accession_number": "0001193125-26-191507",
+      "primary_document": "msft-20260331.htm"
+    },
+    {
+      "form": "8-K",
+      "filing_date": "2026-04-29",
+      "report_date": "2026-04-29",
+      "accession_number": "0001193125-26-191457",
+      "primary_document": "msft-20260429.htm"
+    },
+    {
+      "form": "10-Q",
+      "filing_date": "2026-01-28",
+      "report_date": "2025-12-31",
+      "accession_number": "0001193125-26-027207",
+      "primary_document": "msft-20251231.htm"
+    },
+    {
+      "form": "8-K",
+      "filing_date": "2026-01-28",
+      "report_date": "2026-01-28",
+      "accession_number": "0001193125-26-027198",
+      "primary_document": "msft-20260128.htm"
+    }
+  ],
+  "fixture_meta": {
+    "note": "Recorded real SEC EDGAR data, frozen for deterministic testing. Not live.",
+    "data_mode": "fixture",
+    "recorded_at": "2026-08-27"
+  }
+}

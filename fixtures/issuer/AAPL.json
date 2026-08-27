@@ -1,0 +1,328 @@
+{
+  "cik": "0000320193",
+  "ticker": "AAPL",
+  "company_name": "Apple Inc.",
+  "sic": "3571",
+  "sic_description": "Electronic Computers",
+  "revenue_concept": "RevenueFromContractWithCustomerExcludingAssessedTax",
+  "periods": [
+    {
+      "period_end": "2021-09-25",
+      "revenue": {
+        "period_end": "2021-09-25",
+        "period_start": "2020-09-27",
+        "value": 365817000000.0,
+        "accession_number": "0000320193-23-000106",
+        "filed": "2023-11-03",
+        "fiscal_year": 2023
+      },
+      "operating_income": {
+        "period_end": "2021-09-25",
+        "period_start": "2020-09-27",
+        "value": 108949000000.0,
+        "accession_number": "0000320193-23-000106",
+        "filed": "2023-11-03",
+        "fiscal_year": 2023
+      },
+      "operating_cash_flow": {
+        "period_end": "2021-09-25",
+        "period_start": "2020-09-27",
+        "value": 104038000000.0,
+        "accession_number": "0000320193-23-000106",
+        "filed": "2023-11-03",
+        "fiscal_year": 2023
+      },
+      "total_assets": {
+        "period_end": "2021-09-25",
+        "period_start": null,
+        "value": 351002000000.0,
+        "accession_number": "0000320193-22-000108",
+        "filed": "2022-10-28",
+        "fiscal_year": 2022
+      },
+      "total_liabilities": {
+        "period_end": "2021-09-25",
+        "period_start": null,
+        "value": 287912000000.0,
+        "accession_number": "0000320193-22-000108",
+        "filed": "2022-10-28",
+        "fiscal_year": 2022
+      },
+      "stockholders_equity": {
+        "period_end": "2021-09-25",
+        "period_start": null,
+        "value": 63090000000.0,
+        "accession_number": "0000320193-24-000123",
+        "filed": "2024-11-01",
+        "fiscal_year": 2024
+      }
+    },
+    {
+      "period_end": "2022-09-24",
+      "revenue": {
+        "period_end": "2022-09-24",
+        "period_start": "2021-09-26",
+        "value": 394328000000.0,
+        "accession_number": "0000320193-24-000123",
+        "filed": "2024-11-01",
+        "fiscal_year": 2024
+      },
+      "operating_income": {
+        "period_end": "2022-09-24",
+        "period_start": "2021-09-26",
+        "value": 119437000000.0,
+        "accession_number": "0000320193-24-000123",
+        "filed": "2024-11-01",
+        "fiscal_year": 2024
+      },
+      "operating_cash_flow": {
+        "period_end": "2022-09-24",
+        "period_start": "2021-09-26",
+        "value": 122151000000.0,
+        "accession_number": "0000320193-24-000123",
+        "filed": "2024-11-01",
+        "fiscal_year": 2024
+      },
+      "total_assets": {
+        "period_end": "2022-09-24",
+        "period_start": null,
+        "value": 352755000000.0,
+        "accession_number": "0000320193-23-000106",
+        "filed": "2023-11-03",
+        "fiscal_year": 2023
+      },
+      "total_liabilities": {
+        "period_end": "2022-09-24",
+        "period_start": null,
+        "value": 302083000000.0,
+        "accession_number": "0000320193-23-000106",
+        "filed": "2023-11-03",
+        "fiscal_year": 2023
+      },
+      "stockholders_equity": {
+        "period_end": "2022-09-24",
+        "period_start": null,
+        "value": 50672000000.0,
+        "accession_number": "0000320193-25-000079",
+        "filed": "2025-10-31",
+        "fiscal_year": 2025
+      }
+    },
+    {
+      "period_end": "2023-09-30",
+      "revenue": {
+        "period_end": "2023-09-30",
+        "period_start": "2022-09-25",
+        "value": 383285000000.0,
+        "accession_number": "0000320193-25-000079",
+        "filed": "2025-10-31",
+        "fiscal_year": 2025
+      },
+      "operating_income": {
+        "period_end": "2023-09-30",
+        "period_start": "2022-09-25",
+        "value": 114301000000.0,
+        "accession_number": "0000320193-25-000079",
+        "filed": "2025-10-31",
+        "fiscal_year": 2025
+      },
+      "operating_cash_flow": {
+        "period_end": "2023-09-30",
+        "period_start": "2022-09-25",
+        "value": 110543000000.0,
+        "accession_number": "0000320193-25-000079",
+        "filed": "2025-10-31",
+        "fiscal_year": 2025
+      },
+      "total_assets": {
+        "period_end": "2023-09-30",
+        "period_start": null,
+        "value": 352583000000.0,
+        "accession_number": "0000320193-24-000123",
+        "filed": "2024-11-01",
+        "fiscal_year": 2024
+      },
+      "total_liabilities": {
+        "period_end": "2023-09-30",
+        "period_start": null,
+        "value": 290437000000.0,
+        "accession_number": "0000320193-24-000123",
+        "filed": "2024-11-01",
+        "fiscal_year": 2024
+      },
+      "stockholders_equity": {
+        "period_end": "2023-09-30",
+        "period_start": null,
+        "value": 62146000000.0,
+        "accession_number": "0000320193-25-000079",
+        "filed": "2025-10-31",
+        "fiscal_year": 2025
+      }
+    },
+    {
+      "period_end": "2024-09-28",
+      "revenue": {
+        "period_end": "2024-09-28",
+        "period_start": "2023-10-01",
+        "value": 391035000000.0,
+        "accession_number": "0000320193-25-000079",
+        "filed": "2025-10-31",
+        "fiscal_year": 2025
+      },
+      "operating_income": {
+        "period_end": "2024-09-28",
+        "period_start": "2023-10-01",
+        "value": 123216000000.0,
+        "accession_number": "0000320193-25-000079",
+        "filed": "2025-10-31",
+        "fiscal_year": 2025
+      },
+      "operating_cash_flow": {
+        "period_end": "2024-09-28",
+        "period_start": "2023-10-01",
+        "value": 118254000000.0,
+        "accession_number": "0000320193-25-000079",
+        "filed": "2025-10-31",
+        "fiscal_year": 2025
+      },
+      "total_assets": {
+        "period_end": "2024-09-28",
+        "period_start": null,
+        "value": 364980000000.0,
+        "accession_number": "0000320193-25-000079",
+        "filed": "2025-10-31",
+        "fiscal_year": 2025
+      },
+      "total_liabilities": {
+        "period_end": "2024-09-28",
+        "period_start": null,
+        "value": 308030000000.0,
+        "accession_number": "0000320193-25-000079",
+        "filed": "2025-10-31",
+        "fiscal_year": 2025
+      },
+      "stockholders_equity": {
+        "period_end": "2024-09-28",
+        "period_start": null,
+        "value": 56950000000.0,
+        "accession_number": "0000320193-25-000079",
+        "filed": "2025-10-31",
+        "fiscal_year": 2025
+      }
+    },
+    {
+      "period_end": "2025-09-27",
+      "revenue": {
+        "period_end": "2025-09-27",
+        "period_start": "2024-09-29",
+        "value": 416161000000.0,
+        "accession_number": "0000320193-25-000079",
+        "filed": "2025-10-31",
+        "fiscal_year": 2025
+      },
+      "operating_income": {
+        "period_end": "2025-09-27",
+        "period_start": "2024-09-29",
+        "value": 133050000000.0,
+        "accession_number": "0000320193-25-000079",
+        "filed": "2025-10-31",
+        "fiscal_year": 2025
+      },
+      "operating_cash_flow": {
+        "period_end": "2025-09-27",
+        "period_start": "2024-09-29",
+        "value": 111482000000.0,
+        "accession_number": "0000320193-25-000079",
+        "filed": "2025-10-31",
+        "fiscal_year": 2025
+      },
+      "total_assets": {
+        "period_end": "2025-09-27",
+        "period_start": null,
+        "value": 359241000000.0,
+        "accession_number": "0000320193-25-000079",
+        "filed": "2025-10-31",
+        "fiscal_year": 2025
+      },
+      "total_liabilities": {
+        "period_end": "2025-09-27",
+        "period_start": null,
+        "value": 285508000000.0,
+        "accession_number": "0000320193-25-000079",
+        "filed": "2025-10-31",
+        "fiscal_year": 2025
+      },
+      "stockholders_equity": {
+        "period_end": "2025-09-27",
+        "period_start": null,
+        "value": 73733000000.0,
+        "accession_number": "0000320193-25-000079",
+        "filed": "2025-10-31",
+        "fiscal_year": 2025
+      }
+    }
+  ],
+  "filings": [
+    {
+      "form": "10-Q",
+      "filing_date": "2026-07-31",
+      "report_date": "2026-06-27",
+      "accession_number": "0000320193-26-000020",
+      "primary_document": "aapl-20260627.htm"
+    },
+    {
+      "form": "8-K",
+      "filing_date": "2026-07-30",
+      "report_date": "2026-07-30",
+      "accession_number": "0000320193-26-000018",
+      "primary_document": "aapl-20260730.htm"
+    },
+    {
+      "form": "10-Q",
+      "filing_date": "2026-05-01",
+      "report_date": "2026-03-28",
+      "accession_number": "0000320193-26-000013",
+      "primary_document": "aapl-20260328.htm"
+    },
+    {
+      "form": "8-K",
+      "filing_date": "2026-04-30",
+      "report_date": "2026-04-30",
+      "accession_number": "0000320193-26-000011",
+      "primary_document": "aapl-20260430.htm"
+    },
+    {
+      "form": "8-K",
+      "filing_date": "2026-04-20",
+      "report_date": "2026-04-17",
+      "accession_number": "0001140361-26-015711",
+      "primary_document": "ef20071035_8k.htm"
+    },
+    {
+      "form": "8-K",
+      "filing_date": "2026-02-24",
+      "report_date": "2026-02-24",
+      "accession_number": "0001140361-26-006577",
+      "primary_document": "ef20060722_8k.htm"
+    },
+    {
+      "form": "10-Q",
+      "filing_date": "2026-01-30",
+      "report_date": "2025-12-27",
+      "accession_number": "0000320193-26-000006",
+      "primary_document": "aapl-20251227.htm"
+    },
+    {
+      "form": "8-K",
+      "filing_date": "2026-01-29",
+      "report_date": "2026-01-29",
+      "accession_number": "0000320193-26-000005",
+      "primary_document": "aapl-20260129.htm"
+    }
+  ],
+  "fixture_meta": {
+    "note": "Recorded real SEC EDGAR data, frozen for deterministic testing. Not live.",
+    "data_mode": "fixture",
+    "recorded_at": "2026-08-27"
+  }
+}
