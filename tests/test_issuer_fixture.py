@@ -137,6 +137,54 @@ def test_extract_annual_periods_maps_all_concepts() -> None:
     assert latest.total_assets.period_start is None  # balance-sheet fact is instant
 
 
+def test_extract_annual_periods_picks_concept_with_most_recent_data_not_first_in_priority_order() -> None:
+    # Regression test for a real bug found against live NVIDIA data: a
+    # company can report revenue under RevenueFromContractWithCustomer...
+    # for its older fiscal years, then migrate to the plain Revenues tag
+    # for newer ones. The higher-priority concept name still has *some*
+    # data (just old, superseded data) -- picking "first non-empty
+    # candidate" would silently lock onto the stale tag forever and never
+    # see the newer figures reported under the second concept.
+    gaap = {
+        "RevenueFromContractWithCustomerExcludingAssessedTax": {
+            "units": {
+                "USD": [
+                    {
+                        "start": "2021-01-01",
+                        "end": "2021-12-31",
+                        "val": 500_000.0,
+                        "accn": "old-concept-accn",
+                        "filed": "2022-02-01",
+                        "fy": 2022,
+                        "fp": "FY",
+                        "form": "10-K",
+                    }
+                ]
+            }
+        },
+        "Revenues": {
+            "units": {
+                "USD": [
+                    {
+                        "start": "2023-01-01",
+                        "end": "2023-12-31",
+                        "val": 1_500_000.0,
+                        "accn": "new-concept-accn",
+                        "filed": "2024-02-01",
+                        "fy": 2024,
+                        "fp": "FY",
+                        "form": "10-K",
+                    }
+                ]
+            }
+        },
+    }
+    revenue_concept, periods = extract_annual_periods_from_xbrl({"facts": {"us-gaap": gaap}})
+    assert revenue_concept == "Revenues"
+    assert len(periods) == 1
+    assert periods[0].revenue.value == 1_500_000.0
+
+
 def test_extract_annual_periods_falls_back_to_second_revenue_concept() -> None:
     revenue_concept, periods = extract_annual_periods_from_xbrl(
         _sample_company_facts(use_fallback_revenue=True)

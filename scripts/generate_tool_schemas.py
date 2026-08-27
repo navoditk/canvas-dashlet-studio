@@ -33,6 +33,7 @@ DASHLET_MODULES: list[str] = [
     "dashlets.treasury_curve_dashlet:app",
     "dashlets.portfolio_exposure_dashlet:app",
     "dashlets.portfolio_scenario_dashlet:app",
+    "dashlets.issuer_research_dashlet:app",
 ]
 
 OUTPUT_PATH = (

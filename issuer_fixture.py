@@ -118,12 +118,37 @@ def normalize_period(period: PeriodFacts) -> NormalizedMetrics:
     )
 
 
-def _first_available_concept(gaap_facts: dict, concept_names: list[str]) -> tuple[str | None, list[dict]]:
+def _latest_annual_period_end(entries: list[dict]) -> str | None:
+    annual_ends = [e["end"] for e in entries if e.get("form") == "10-K" and e.get("fp") == "FY"]
+    return max(annual_ends, default=None)
+
+
+def _most_recent_concept(gaap_facts: dict, concept_names: list[str]) -> tuple[str | None, list[dict]]:
+    """Pick whichever candidate concept's annual (10-K/FY) data covers the
+    most recent period end, not simply the first candidate with any data.
+
+    Companies sometimes migrate which XBRL concept they report revenue
+    under (e.g. NVIDIA reported under
+    RevenueFromContractWithCustomerExcludingAssessedTax through FY2022, then
+    switched to the plain Revenues tag from FY2023 onward). Picking "first
+    non-empty candidate in priority order" would silently lock onto the
+    superseded, stale tag forever. This does not merge data across
+    concepts -- a company that migrated tags will show a gap for years only
+    covered by the losing concept, rather than a spliced series that might
+    mix inconsistent restatement bases.
+    """
+    best_name: str | None = None
+    best_entries: list[dict] = []
+    best_end: str | None = None
     for name in concept_names:
         concept = gaap_facts.get(name)
-        if concept and "USD" in concept.get("units", {}):
-            return name, concept["units"]["USD"]
-    return None, []
+        entries = concept.get("units", {}).get("USD", []) if concept else []
+        if not entries:
+            continue
+        latest_end = _latest_annual_period_end(entries)
+        if latest_end is not None and (best_end is None or latest_end > best_end):
+            best_name, best_entries, best_end = name, entries, latest_end
+    return best_name, best_entries
 
 
 def _annual_facts_by_period_end(entries: list[dict]) -> dict[str, dict]:
@@ -163,12 +188,12 @@ def extract_annual_periods_from_xbrl(
     """
     gaap = company_facts_json.get("facts", {}).get("us-gaap", {})
 
-    revenue_concept, revenue_entries = _first_available_concept(gaap, REVENUE_CONCEPTS)
-    _, op_income_entries = _first_available_concept(gaap, OPERATING_INCOME_CONCEPTS)
-    _, ocf_entries = _first_available_concept(gaap, OPERATING_CASH_FLOW_CONCEPTS)
-    _, assets_entries = _first_available_concept(gaap, ASSETS_CONCEPTS)
-    _, liabilities_entries = _first_available_concept(gaap, LIABILITIES_CONCEPTS)
-    _, equity_entries = _first_available_concept(gaap, EQUITY_CONCEPTS)
+    revenue_concept, revenue_entries = _most_recent_concept(gaap, REVENUE_CONCEPTS)
+    _, op_income_entries = _most_recent_concept(gaap, OPERATING_INCOME_CONCEPTS)
+    _, ocf_entries = _most_recent_concept(gaap, OPERATING_CASH_FLOW_CONCEPTS)
+    _, assets_entries = _most_recent_concept(gaap, ASSETS_CONCEPTS)
+    _, liabilities_entries = _most_recent_concept(gaap, LIABILITIES_CONCEPTS)
+    _, equity_entries = _most_recent_concept(gaap, EQUITY_CONCEPTS)
 
     revenue_by_end = _annual_facts_by_period_end(revenue_entries)
     op_income_by_end = _annual_facts_by_period_end(op_income_entries)
