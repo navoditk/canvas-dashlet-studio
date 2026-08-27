@@ -38,6 +38,16 @@ export const DASHLET_REGISTRY = Object.freeze({
             "compare_scenario_impacts",
         ]),
     }),
+    "issuer-research": Object.freeze({
+        id: "issuer-research",
+        displayName: "Issuer Research",
+        module: "dashlets.issuer_research_dashlet:app",
+        approvedTools: Object.freeze([
+            "get_company_facts",
+            "get_financial_trends",
+            "list_recent_filings",
+        ]),
+    }),
 });
 
 export const REGISTERED_TOOL_IDS = [
@@ -55,4 +65,7 @@ export const TOOL_DESCRIPTIONS = Object.freeze({
     run_portfolio_scenario: "Apply a bounded rate/spread/equity shock to one observation date's portfolio and return deterministic total, position-level and sector-level impact.",
     get_scenario_contributions: "Apply a bounded rate/spread/equity shock and return the top position-level impact contributions plus per-sector contributions.",
     compare_scenario_impacts: "Compare two independent bounded rate/spread/equity shock scenarios on the same portfolio and return each scenario's totals plus per-sector impact deltas.",
+    get_company_facts: "Get the latest normalized revenue, operating margin, leverage and operating cash flow for one issuer, with source filing links.",
+    get_financial_trends: "Get normalized revenue, operating margin, leverage and cash-flow trends across recent fiscal years for one issuer.",
+    list_recent_filings: "List recent 10-K/10-Q/8-K filings for one issuer, with source links to each filing.",
 });

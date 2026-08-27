@@ -2,7 +2,7 @@
 
 A GitHub Copilot Canvas extension and small Python/FastAPI runtime for building **dashlets**: single-file financial monitors that render in a Canvas iframe and expose the same typed operations to Copilot as agent tools.
 
-This repository currently ships four working dashlets — **Hello** (a smoke test), **Treasury Curve** (a reference application with fixture and official end-of-day data), **Portfolio Exposure** (deterministic long/short/net exposure and concentration from mock positions), and **Portfolio Scenario Impact** (deterministic rate/spread/equity shock analysis on the same mock positions) — plus the reusable pieces needed to run, extend and validate them.
+This repository ships all four originally planned reference dashlets — **Hello** (a smoke test), **Treasury Curve** (fixture and official end-of-day Treasury.gov data), **Portfolio Exposure** (deterministic long/short/net exposure and concentration from mock positions), **Portfolio Scenario Impact** (deterministic rate/spread/equity shock analysis on the same mock positions), and **Issuer Research** (real, live SEC EDGAR company facts and filings for any of ~10,388 public companies) — plus the reusable pieces needed to run, extend and validate them.
 
 ## 1. What is a dashlet?
 
@@ -19,6 +19,7 @@ This remains an ordinary client-server web architecture — a browser-rendered i
 - Treasury Curve dashlet: interactive yield curve, slopes and comparison views with explicit fixture/EOD data-mode selection.
 - Portfolio Exposure dashlet: deterministic long/short/net exposure by sector and issuer, top concentrations, and a sector-level snapshot comparison, from mock fixture positions (`get_portfolio_exposures`, `get_top_concentrations`, `compare_portfolio_exposures` tools).
 - Portfolio Scenario Impact dashlet: deterministic rate/spread/equity shock impact on the same mock positions — total/position/sector-level impact and a two-scenario comparison (`run_portfolio_scenario`, `get_scenario_contributions`, `compare_scenario_impacts` tools).
+- Issuer Research dashlet: real public-company financial facts, multi-year trends and filing timelines from SEC EDGAR, for any of ~10,388 SEC-registered tickers in live mode (`get_company_facts`, `get_financial_trends`, `list_recent_filings` tools).
 - A shared `dashlet_framework/` package (`create_dashlet_app`, the `agent-tool` tag constant, `Provenance`, and error-response models) so every dashlet reuses the same `/health` implementation, error shapes and provenance model instead of duplicating them.
 - Agent-tool bridge: only FastAPI operations tagged `agent-tool` and present in the extension's allowlist become Copilot tools; tool arguments are validated before any provider call; tools are isolated per active dashlet. Tool parameter schemas are generated from each dashlet's real OpenAPI output (`scripts/generate_tool_schemas.py`), not hand-maintained.
 - Reusable dashlet/OpenAPI contract validation (`tests/test_dashlet_contract.py`, `.github/extensions/dashlet-studio/dashlet-registry.test.mjs`): every registered dashlet is checked automatically for required routes, agent-tool tagging correctness, unique operation IDs and mount-relative fetch paths, with no per-dashlet test code required.
@@ -65,7 +66,24 @@ Rate and spread shocks flip sign (yields rising / spreads widening reduce the va
 
 **All 12 fixture positions currently have `duration = 0.0` and `spread_duration = 0.0`** — this is an all-equity book with no fixed-income holdings, so a rate or spread shock correctly shows **$0 impact** on it today. That's an intentional, tested property of the fixture data (`test_real_fixtures_have_sector_beta_and_zero_duration`), not a gap: the rate/spread math itself is thoroughly unit-tested against synthetic non-zero-duration positions in `tests/test_scenario_fixture.py`, independent of what the shipped fixture happens to contain.
 
-## 7. Architecture at a glance
+## 7. Issuer Research reference application
+
+The Issuer Research dashlet (`dashlets/issuer_research_dashlet.py`) is the fourth and last of the originally planned reference use cases, and the only one built on **real public data by default rather than mock data** — it reads directly from [SEC EDGAR's public APIs](https://www.sec.gov/os/webmaster-faq#developers) (`data.sec.gov`), no API key required. Three agent-tool-tagged operations:
+
+- `get_company_facts` — the latest normalized revenue, operating margin, leverage ratio and operating cash flow for one issuer, with a source accession-number link to the actual SEC filing for every underlying figure.
+- `get_financial_trends` — the same normalized measures across up to 5 recent fiscal years (`years`, bounded 1–5).
+- `list_recent_filings` — a recent 10-K/10-Q/8-K filing timeline (`limit`, bounded 1–8; optional `form_type` filter), each with a direct EDGAR source link.
+
+Like Treasury, this dashlet has an explicit, required `data_mode` (typed directly as the `IssuerDataMode` enum, so the constraint shows up natively in OpenAPI and therefore in the generated Copilot tool schema — no silent default):
+
+- `fixture` — two **recorded real** SEC snapshots (AAPL, Apple Inc.; MSFT, Microsoft Corp), frozen for deterministic, network-free testing. This is genuinely real historical data, not synthetic/fictional numbers — see `scripts/generate_issuer_fixtures.py`.
+- `live` — fetches current data from SEC EDGAR for **any of the ~10,388 SEC-registered tickers**, not just the two fixture companies.
+
+Normalization is deterministic Python, not LLM-computed: `operating_margin_pct = operating_income / revenue * 100`, `leverage_ratio = total_liabilities / stockholders_equity`, both guarded against zero-denominator division. Revenue is extracted by trying a small list of XBRL concept tags and picking whichever one's data covers the **most recent** fiscal period — see the note below on why "first available" was the wrong rule.
+
+**A real bug found and fixed while building this**: NVIDIA reported revenue under the `RevenueFromContractWithCustomerExcludingAssessedTax` XBRL tag through fiscal year 2022, then migrated to the plain `Revenues` tag from FY2023 onward. A naive "first non-empty candidate" concept-selection rule locks onto the superseded tag forever and silently returns stale data as "latest." `issuer_fixture._most_recent_concept` instead picks whichever candidate concept's data covers the most recent period end — verified against real Apple, Microsoft and NVIDIA data, with a regression test reproducing the exact failure mode.
+
+## 8. Architecture at a glance
 
 ```mermaid
 flowchart TB
@@ -79,7 +97,7 @@ flowchart TB
 
 The iframe and the Copilot agent both call the **same** FastAPI business operation — `fetch("./api/treasury/curve?...")` from the embedded JavaScript, and the identical `/api/treasury/curve` path via the Canvas tool proxy for the agent. This avoids duplicated business logic and keeps provenance identical for both consumers. See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the full component and data-flow diagrams.
 
-## 8. Technology stack
+## 9. Technology stack
 
 | Area | Choice |
 |---|---|
@@ -88,13 +106,13 @@ The iframe and the Copilot agent both call the **same** FastAPI business operati
 | Runtime | Python, FastAPI, Uvicorn |
 | Shared framework | `dashlet_framework` (app factory, provenance/error models) — Python, no new runtime dependency |
 | Contracts | Pydantic and OpenAPI — OpenAPI is also the source `scripts/generate_tool_schemas.py` reads to generate Canvas tool schemas (see [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) §6) |
-| Data | HTTPX, provider adapters, deterministic fixtures |
+| Data | HTTPX, provider adapters, deterministic fixtures, [SEC EDGAR public APIs](https://www.sec.gov/os/webmaster-faq#developers) (Issuer Research live mode) |
 | UI | HTML, Alpine.js, Tailwind CSS, Plotly.js |
 | Quality | Pytest, FastAPI `TestClient`, Ruff, Node's built-in test runner, generic dashlet-contract validation (`tests/test_dashlet_contract.py`, `dashlet-registry.test.mjs`) |
 | CI | GitHub Actions (`.github/workflows/ci.yml`) — Ruff, Pytest, tool-schema drift check, `npm test` |
 | Dependency management | `uv` (Python), `npm` (Node) |
 
-## 9. Quick start
+## 10. Quick start
 
 Install prerequisites per [`INSTALL.md`](INSTALL.md), then from the repository root:
 
@@ -108,16 +126,19 @@ Run a dashlet directly (outside Canvas), for browser or `curl` testing:
 uv run uvicorn dashlets.treasury_curve_dashlet:app --host 127.0.0.1 --port 8765
 # or: uv run uvicorn dashlets.portfolio_exposure_dashlet:app --host 127.0.0.1 --port 8765
 # or: uv run uvicorn dashlets.portfolio_scenario_dashlet:app --host 127.0.0.1 --port 8765
+# or: uv run uvicorn dashlets.issuer_research_dashlet:app --host 127.0.0.1 --port 8765
 ```
 
 ```bash
 curl "http://127.0.0.1:8765/health"
 curl "http://127.0.0.1:8765/api/treasury/curve?data_mode=fixture"
-curl "http://127.0.0.1:8765/api/portfolio/exposures"                     # Portfolio Exposure dashlet
-curl "http://127.0.0.1:8765/api/scenario/run?equity_shock_pct=10"        # Portfolio Scenario Impact dashlet
+curl "http://127.0.0.1:8765/api/portfolio/exposures"                          # Portfolio Exposure dashlet
+curl "http://127.0.0.1:8765/api/scenario/run?equity_shock_pct=10"             # Portfolio Scenario Impact dashlet
+curl "http://127.0.0.1:8765/api/issuer/facts?ticker=AAPL&data_mode=fixture"   # Issuer Research dashlet (recorded)
+curl "http://127.0.0.1:8765/api/issuer/facts?ticker=NVDA&data_mode=live"      # Issuer Research dashlet (real SEC data, any ticker)
 ```
 
-## 10. Running tests
+## 11. Running tests
 
 ```bash
 uv run ruff check .
@@ -130,17 +151,17 @@ cd .github/extensions/dashlet-studio
 npm test
 ```
 
-All four commands run in CI (`.github/workflows/ci.yml`) on every push and pull request. `docs/evidence/treasury-reference.md` has a historical snapshot of these commands from the Treasury milestone, including a small number of then-pre-existing failures that were called out explicitly and have since been fixed.
+All four commands run in CI (`.github/workflows/ci.yml`) on every push and pull request. The automated test suite never makes a real network call, including for Issuer Research's live mode — `httpx.Client` is fully mocked in every live-mode test (see `docs/DATA_ACCESS.md` §6). `docs/evidence/treasury-reference.md` has a historical snapshot of these commands from the Treasury milestone, including a small number of then-pre-existing failures that were called out explicitly and have since been fixed.
 
-## 11. Opening Dashlet Studio Canvas
+## 12. Opening Dashlet Studio Canvas
 
-From a Copilot session with this repository open, invoke the `dashlet-studio` Canvas extension. It exposes actions to select a dashlet (`hello`, `treasury-curve`, `portfolio-exposure`, or `portfolio-scenario`), start it, view runtime diagnostics, restart it, and stop it. Only one dashlet process runs at a time; switching dashlets stops the previous process before starting the next.
+From a Copilot session with this repository open, invoke the `dashlet-studio` Canvas extension. It exposes actions to select a dashlet (`hello`, `treasury-curve`, `portfolio-exposure`, `portfolio-scenario`, or `issuer-research`), start it, view runtime diagnostics, restart it, and stop it. Only one dashlet process runs at a time; switching dashlets stops the previous process before starting the next.
 
-## 12. Using Treasury through the iframe
+## 13. Using Treasury through the iframe
 
 Once the Treasury Curve dashlet is running and displayed in the Canvas iframe, use the on-page controls to choose an observation date and a Data Mode (`fixture` or `eod`). The curve, slope cards, and (when both a base and compare date are selected) the comparison table update together, along with the provenance line showing source, observation date and data mode.
 
-## 13. Using Treasury as an agent tool
+## 14. Using Treasury as an agent tool
 
 While the Treasury Curve dashlet is active, ask Copilot a data question, for example:
 
@@ -148,16 +169,16 @@ While the Treasury Curve dashlet is active, ask Copilot a data question, for exa
 
 Copilot selects the matching approved tool (`get_treasury_curve`, `get_treasury_curve_slopes`, or `compare_treasury_curves`), the Canvas tool proxy validates the arguments against an explicit JSON schema (including the required `data_mode` enum), forwards the request to the same FastAPI endpoint the iframe uses, and returns the validated, provenance-tagged response.
 
-## 14. Fixture versus EOD modes (Treasury only)
+## 15. Fixture versus EOD/live modes
 
-Every Treasury operation requires an explicit `data_mode`:
+Treasury, and separately Issuer Research, each require an explicit `data_mode` — no silent default, no fallback to fixture/recorded data if a live request fails:
 
-- `fixture` — deterministic, recorded sample data. Safe for demos, tests and CI; no network calls.
-- `eod` — official end-of-day yield data fetched live from Treasury.gov.
+- Treasury: `fixture` (deterministic sample data) or `eod` (official end-of-day yields, live from Treasury.gov).
+- Issuer Research: `fixture` (two recorded real SEC snapshots, AAPL/MSFT) or `live` (current data from SEC EDGAR, any of ~10,388 tickers).
 
-`data_mode` has no default value: omitting it, or passing an unsupported value, is rejected before any provider is invoked (HTTP 422 from FastAPI, or a client-side rejection in the Canvas tool proxy). An EOD request failure is never silently served from fixture data. Neither Portfolio Exposure nor Portfolio Scenario Impact has a `data_mode` parameter — see §5–6.
+`data_mode` has no default value: omitting it, or passing an unsupported value, is rejected before any provider is invoked (HTTP 422 from FastAPI, or a client-side rejection in the Canvas tool proxy). Neither Portfolio Exposure nor Portfolio Scenario Impact has a `data_mode` parameter at all — see §5–6.
 
-## 15. Using Portfolio Exposure
+## 16. Using Portfolio Exposure
 
 Once the Portfolio Exposure dashlet is active in the Canvas iframe, choose an observation date and click **Load** to see the sector net-exposure chart, long/short/net totals, and the top issuer concentrations table. Select a comparison date and click **Compare** to see sector-level exposure deltas.
 
@@ -167,7 +188,7 @@ As an agent tool, ask Copilot, for example:
 
 Copilot selects `get_top_concentrations`, validates `top_n` and `date` against the generated schema, forwards the request to `/api/portfolio/concentration`, and returns the same ranked, provenance-tagged response the iframe table shows.
 
-## 16. Using Portfolio Scenario Impact
+## 17. Using Portfolio Scenario Impact
 
 Once the Portfolio Scenario Impact dashlet is active in the Canvas iframe, choose an observation date, enter a rate shock (bps), spread shock (bps) and/or equity shock (%), and click **Run Scenario** to see the sector impact-contribution chart, rate/spread/equity/total impact totals, and the top position impacts table. Enter a second shock (Scenario A/B) and click **Compare** to see per-sector impact deltas between the two scenarios.
 
@@ -177,52 +198,67 @@ As an agent tool, ask Copilot, for example:
 
 Copilot selects `run_portfolio_scenario`, validates `equity_shock_pct` (and the omitted `rate_shock_bps`/`spread_shock_bps`, defaulting to 0) against the generated schema — rejecting any shock outside its bound before the provider is ever called — forwards the request to `/api/scenario/run`, and returns the same deterministic, provenance-tagged impact the iframe shows.
 
-## 17. Evidence and screenshots
+## 18. Using Issuer Research
+
+Once the Issuer Research dashlet is active in the Canvas iframe, type a ticker (or click one of the fixture quick-select buttons), choose a Data Mode, and click **Load** to see the company header, revenue trend chart, latest-period stat cards (each with a **Source** link to the real SEC filing), and a recent filings timeline. Set Data Mode to `live` and enter any real ticker — not just AAPL/MSFT — to pull current data directly from SEC EDGAR.
+
+As an agent tool, ask Copilot, for example:
+
+> Use the issuer research tool to get NVIDIA's financial trends over the last 5 years, live from SEC EDGAR.
+
+Copilot selects `get_financial_trends`, validates `ticker="NVDA"`, `data_mode="live"` and `years=5` against the generated schema, forwards the request to `/api/issuer/trends`, and returns the same normalized, source-linked trend data the iframe chart shows — real SEC data, not a fictional number.
+
+## 19. Evidence and screenshots
 
 See [`docs/evidence/treasury-reference.md`](docs/evidence/treasury-reference.md) for the full validation record: direct FastAPI checks, live Canvas agent-tool invocations, tool-isolation negative tests, process-lifecycle results, and Python/Node test summaries.
 
 ![Treasury Curve Monitor in EOD mode](docs/evidence/images/treasury-canvas-eod.png)
 
-A genuine Canvas screenshot (EOD mode) is included above; see [`docs/evidence/treasury-reference.md`](docs/evidence/treasury-reference.md#screenshot) for capture details and provenance. Portfolio Exposure's evidence record is [`docs/evidence/portfolio-exposure-reference.md`](docs/evidence/portfolio-exposure-reference.md) — direct-FastAPI verification, test summaries, and a real browser screenshot with every displayed value cross-checked against the live API are complete; Canvas-specific evidence is explicitly deferred (see `docs/PROGRESS.md` "Resume here"). Portfolio Scenario Impact's evidence record is [`docs/evidence/portfolio-scenario-reference.md`](docs/evidence/portfolio-scenario-reference.md), verified the same way (direct FastAPI + full test suite), with Canvas-specific evidence deferred for the same stated reason.
+A genuine Canvas screenshot (EOD mode) is included above; see [`docs/evidence/treasury-reference.md`](docs/evidence/treasury-reference.md#screenshot) for capture details and provenance. Portfolio Exposure's evidence record is [`docs/evidence/portfolio-exposure-reference.md`](docs/evidence/portfolio-exposure-reference.md) — direct-FastAPI verification, test summaries, and a real browser screenshot with every displayed value cross-checked against the live API are complete; Canvas-specific evidence is explicitly deferred (see `docs/PROGRESS.md` "Resume here"). Portfolio Scenario Impact's evidence record is [`docs/evidence/portfolio-scenario-reference.md`](docs/evidence/portfolio-scenario-reference.md), verified the same way. Issuer Research's evidence record is [`docs/evidence/issuer-research-reference.md`](docs/evidence/issuer-research-reference.md) — direct-FastAPI verification against real recorded data, the full test suite, and a real live-mode call against actual SEC EDGAR (Alphabet Inc., not in the fixture set) are complete; Canvas-specific evidence is deferred for the same stated reason as the other two.
 
-## 18. Repository structure
+## 20. Repository structure
 
 ```text
 AGENTS.md                          Canonical instructions for any agent (or human) changing this repository
 dashlet_framework/                 Shared app factory, agent-tool tag constant, provenance/error models
 dashlets/                          Dashlet FastAPI applications (Hello, Treasury Curve, Portfolio Exposure,
-                                    Portfolio Scenario Impact) + Treasury/Portfolio/Scenario providers
+                                    Portfolio Scenario Impact, Issuer Research) + their providers
 portfolio_fixture.py               Portfolio position/exposure models and fixture loading (shared by
                                     Portfolio Exposure and Portfolio Scenario Impact)
 scenario_fixture.py                Deterministic rate/spread/equity shock calculation engine
+issuer_fixture.py                  SEC XBRL extraction/normalization models and functions (shared by the
+                                    live SEC provider and the fixture-generation script)
 treasury_fixture.py                Treasury curve models and fixture loading
 fixtures/treasury/                 Deterministic Treasury fixture data
 fixtures/portfolio/                Deterministic mock portfolio position fixtures
+fixtures/issuer/                   Recorded real SEC EDGAR data (AAPL, MSFT) -- not synthetic
 tests/                             Python pytest suite, including the generic dashlet contract validation
 tests/js/                          Node-based behavioral tests for the Treasury iframe client
-scripts/                           generate_tool_schemas.py (checked in CI) + manual/ad hoc verification scripts
+scripts/                           generate_tool_schemas.py (checked in CI), generate_issuer_fixtures.py
+                                    (manual, refreshes recorded SEC data), manual/ad hoc verification scripts
 .github/extensions/dashlet-studio/ Canvas extension: process launcher, tool proxy, control server, dashlet
                                     registry, generated tool schemas
 .github/workflows/                 CI: Ruff, Pytest, tool-schema drift check, npm test
 docs/                              Installation, architecture, roadmap, progress, contract and evidence documentation
 ```
 
-## 19. Current limitations
+## 21. Current limitations
 
-- Hello, Treasury Curve, Portfolio Exposure and Portfolio Scenario Impact are implemented; Issuer Research is future work.
-- Neither Portfolio Exposure nor Portfolio Scenario Impact has a live data mode (mock positions only) — there is no live holdings feed, unlike Treasury's fixture/EOD split.
+- All four originally planned reference dashlets are implemented (Hello, Treasury Curve, Portfolio Exposure, Portfolio Scenario Impact, Issuer Research).
+- Neither Portfolio Exposure nor Portfolio Scenario Impact has a live data mode (mock positions only) — there is no live holdings feed, unlike Treasury's and Issuer Research's fixture/live split.
 - Portfolio Scenario Impact's rate and spread shocks show $0 impact on the current fixture data (an all-equity book with no fixed-income holdings) — intentional and tested, not a defect; see §6.
+- Issuer Research's revenue/margin/leverage/cash-flow extraction is tested against real Apple, Microsoft and NVIDIA XBRL data, but SEC's ~10,388 registered filers use heterogeneous, sometimes-migrating XBRL tagging; a ticker whose data doesn't match the concept tags this dashlet knows about returns a controlled `missing_financial_data` error rather than a crash, but won't return partial/best-effort data.
 - Only one dashlet process runs at a time; there is no concurrent multi-dashlet or cross-dashlet composition view yet.
 - Dashlet registration (`DASHLET_REGISTRY` in `dashlet-registry.mjs`) is manual; there is no auto-discovery yet.
 - No production sandbox, persistent artifact store, or production identity/authorization model.
 - No hosted gallery; all verification has been against locally spawned processes.
 - See [`docs/PROGRESS.md`](docs/PROGRESS.md) "Known limitations" for the complete list.
 
-## 20. Roadmap
+## 22. Roadmap
 
 See [`docs/ROADMAP.md`](docs/ROADMAP.md) for the staged execution plan and [`docs/PROGRESS.md`](docs/PROGRESS.md#resume-here) for the prioritized next task.
 
-## 21. Documentation map
+## 23. Documentation map
 
 | Document | Purpose |
 |---|---|
@@ -242,13 +278,14 @@ See [`docs/ROADMAP.md`](docs/ROADMAP.md) for the staged execution plan and [`doc
 | [`docs/evidence/treasury-reference.md`](docs/evidence/treasury-reference.md) | Treasury milestone validation evidence |
 | [`docs/evidence/portfolio-exposure-reference.md`](docs/evidence/portfolio-exposure-reference.md) | Portfolio Exposure validation evidence (browser-verified; Canvas-specific sections deferred) |
 | [`docs/evidence/portfolio-scenario-reference.md`](docs/evidence/portfolio-scenario-reference.md) | Portfolio Scenario Impact validation evidence (direct-FastAPI/test verified; Canvas-specific sections deferred) |
+| [`docs/evidence/issuer-research-reference.md`](docs/evidence/issuer-research-reference.md) | Issuer Research validation evidence (real SEC data verified; Canvas-specific sections deferred) |
 | [`docs/REFERENCES.md`](docs/REFERENCES.md) | Verified external documentation and learning references |
 
-## 22. References
+## 24. References
 
-External documentation for every technology used in this project — GitHub Copilot App, Canvas extensions, FastAPI, Pydantic, Alpine.js, `uv`, Treasury data, and more — is curated in [`docs/REFERENCES.md`](docs/REFERENCES.md).
+External documentation for every technology used in this project — GitHub Copilot App, Canvas extensions, FastAPI, Pydantic, Alpine.js, `uv`, Treasury data, SEC EDGAR, and more — is curated in [`docs/REFERENCES.md`](docs/REFERENCES.md).
 
-## 23. Contributing / public-repository safety guidance
+## 25. Contributing / public-repository safety guidance
 
 This is a public repository. Before committing or opening a pull request:
 

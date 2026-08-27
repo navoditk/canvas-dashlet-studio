@@ -11,17 +11,17 @@ Update this file at the end of each implementation block. Mark an item complete 
 
 ## Current status
 
-- **Overall milestone status:** the Treasury Curve reference dashlet is complete through Milestone 3. CI, the shared `dashlet_framework` package, generic OpenAPI-derived tool schemas, and reusable contract validation (originally Resume-here tasks 1–4) are done. Milestone 4's durable-instruction prerequisites are done. Portfolio Exposure & Concentration (task 5) and Portfolio Scenario Impact (task 6) are both done, pending independent review (see Milestone 4 evidence above). Remaining Milestone 4 work: Issuer Research.
-- **Latest validation date:** 2026-08-26.
-- **What works today:** Hello, Treasury Curve, Portfolio Exposure and Portfolio Scenario Impact all run under the Dashlet Studio Canvas extension, built on a shared `dashlet_framework` package (`create_dashlet_app`, `AGENT_TOOL_TAG`, `Provenance`, `DashletErrorDetail`/`DashletErrorResponse`) instead of duplicated per-dashlet boilerplate; every dashlet exposes `/health` and `/metadata`. A user can switch between any of the four, view it in the iframe, and ask Copilot to invoke its approved agent tools. Treasury exposes `get_treasury_curve`, `get_treasury_curve_slopes` and `compare_treasury_curves` with an explicit fixture/EOD `data_mode`. Portfolio Exposure exposes `get_portfolio_exposures`, `get_top_concentrations` and `compare_portfolio_exposures` from deterministic mock positions (fixture-only, no live mode). Portfolio Scenario Impact exposes `run_portfolio_scenario`, `get_scenario_contributions` and `compare_scenario_impacts` — deterministic rate/spread/equity shock impact on the *same* mock positions (`portfolio_fixture.Position` extended with optional `duration`/`spread_duration`/`beta`, reusing `FixturePortfolioProvider` directly rather than duplicating fixture-loading logic). Agent-tool parameter schemas are generated from each dashlet's real `app.openapi()` output by `scripts/generate_tool_schemas.py`; CI fails if the committed generated file drifts from source. Reusable contract validation (`tests/test_dashlet_contract.py`, `dashlet-registry.test.mjs`) checks every registered dashlet automatically — Portfolio Scenario Impact needed zero new contract-test code. A GitHub Actions workflow (`.github/workflows/ci.yml`) runs Ruff, Pytest, the schema-drift check and `npm test` on every push/PR.
+- **Overall milestone status:** the Treasury Curve reference dashlet is complete through Milestone 3. CI, the shared `dashlet_framework` package, generic OpenAPI-derived tool schemas, and reusable contract validation (originally Resume-here tasks 1–4) are done. Milestone 4's durable-instruction prerequisites are done. All four originally planned reference dashlets are now built: Portfolio Exposure & Concentration (task 5), Portfolio Scenario Impact (task 6), and Issuer Research (task 7) — all three pending independent review (see Milestone 4 evidence above). Milestone 4's business-use-case work is complete; remaining work is Milestone 5 (gallery) and stronger governance/observability.
+- **Latest validation date:** 2026-08-27.
+- **What works today:** Hello, Treasury Curve, Portfolio Exposure, Portfolio Scenario Impact and Issuer Research all run under the Dashlet Studio Canvas extension, built on a shared `dashlet_framework` package (`create_dashlet_app`, `AGENT_TOOL_TAG`, `Provenance`, `DashletErrorDetail`/`DashletErrorResponse`) instead of duplicated per-dashlet boilerplate; every dashlet exposes `/health` and `/metadata`. A user can switch between any of the five, view it in the iframe, and ask Copilot to invoke its approved agent tools. Treasury exposes `get_treasury_curve`, `get_treasury_curve_slopes` and `compare_treasury_curves` with an explicit fixture/EOD `data_mode`. Portfolio Exposure exposes `get_portfolio_exposures`, `get_top_concentrations` and `compare_portfolio_exposures` from deterministic mock positions (fixture-only, no live mode). Portfolio Scenario Impact exposes `run_portfolio_scenario`, `get_scenario_contributions` and `compare_scenario_impacts` — deterministic rate/spread/equity shock impact on the *same* mock positions. Issuer Research exposes `get_company_facts`, `get_financial_trends` and `list_recent_filings` reading real data directly from SEC EDGAR's public APIs (`data.sec.gov`) — `fixture` mode uses two recorded real snapshots (AAPL, MSFT), `live` mode fetches current data for any of ~10,388 SEC-registered tickers, both with an explicit required `data_mode` typed as a real Python enum (so the constraint shows up natively in OpenAPI, matching the Treasury pattern). Agent-tool parameter schemas are generated from each dashlet's real `app.openapi()` output by `scripts/generate_tool_schemas.py`; CI fails if the committed generated file drifts from source. That generator itself had a real bug fixed this session (naive Python-repr-to-JS string escaping broke on any description containing a quote character) -- now uses `json.dumps()` plus a runtime `deepFreeze()` helper instead of hand-rolled JS-literal serialization. Reusable contract validation (`tests/test_dashlet_contract.py`, `dashlet-registry.test.mjs`) checks every registered dashlet automatically -- both Portfolio Scenario Impact and Issuer Research needed zero new contract-test code. A GitHub Actions workflow (`.github/workflows/ci.yml`) runs Ruff, Pytest, the schema-drift check and `npm test` on every push/PR.
 
 ## Resume here
 
-The next developer should start with **Task 7** below before anything else in this repository.
+The next developer should start with **Task 8** below before anything else in this repository.
 
-Four items remain deliberately open, not accidentally dropped: (1) independent review passes for Portfolio Exposure and Portfolio Scenario Impact (see Milestone 4 evidence above), and (2) live-Canvas evidence for both (agent-tool invocation logs, tool-isolation checks, process-lifecycle checks, Canvas-embedded screenshots — see `docs/evidence/portfolio-exposure-reference.md` and `docs/evidence/portfolio-scenario-reference.md`). Both kinds of gap were explicitly deprioritized on 2026-08-26 to keep moving on Milestone 4's remaining business use cases rather than block on them; direct-FastAPI verification and the full automated test suite already exist for both dashlets (plus a real cross-verified browser screenshot for Portfolio Exposure), so this is not "unverified," just "not yet verified inside an actual Canvas session." With two dashlets now sharing this gap, doing one combined live-Canvas evidence pass across both (plus Treasury, to refresh it) is more efficient than two separate passes — a good candidate for the next dedicated session.
+Six items remain deliberately open, not accidentally dropped: (1) independent review passes for Portfolio Exposure, Portfolio Scenario Impact and Issuer Research (see Milestone 4 evidence above), and (2) live-Canvas evidence for all three (agent-tool invocation logs, tool-isolation checks, process-lifecycle checks, Canvas-embedded screenshots -- see `docs/evidence/portfolio-exposure-reference.md`, `docs/evidence/portfolio-scenario-reference.md`, `docs/evidence/issuer-research-reference.md`). Both kinds of gap were explicitly deprioritized starting 2026-08-26 to keep moving on Milestone 4's remaining business use cases rather than block on them; direct-FastAPI verification and the full automated test suite already exist for all three dashlets (plus a real cross-verified browser screenshot for Portfolio Exposure, and a real live-mode SEC EDGAR call for Issuer Research), so this is not "unverified," just "not yet verified inside an actual Canvas session." With three dashlets now sharing this gap, doing one combined live-Canvas evidence pass across all of them (plus Treasury, to refresh it) is more efficient than three separate passes -- a strong candidate for the next dedicated session, now that Milestone 4's business-use-case work is otherwise complete.
 
-**Recommended branch:** `feature/issuer-research`
+**Recommended branch:** `feature/canvas-evidence-pass` (or `feature/gallery` if proceeding straight to Milestone 5 instead)
 
 1. ~~Add GitHub Actions for Ruff, Pytest and Node tests.~~ Done — see `.github/workflows/ci.yml`.
 2. ~~Add reusable dashlet/OpenAPI contract validation.~~ Done — see `tests/test_dashlet_contract.py` and `.github/extensions/dashlet-studio/dashlet-registry.test.mjs`. `DASHLET_REGISTRY`/`REGISTERED_TOOL_IDS`/`TOOL_DESCRIPTIONS` were extracted from `extension.mjs` into `dashlet-registry.mjs` so they're importable by tests without triggering `joinSession()`.
@@ -29,9 +29,10 @@ Four items remain deliberately open, not accidentally dropped: (1) independent r
 4. ~~Replace the Treasury-specific Canvas schema bridge (`treasury-tool-schemas.mjs`) with generic approved OpenAPI-to-capability schema generation.~~ Done — see `scripts/generate_tool_schemas.py` and `.github/extensions/dashlet-studio/generated-tool-schemas.mjs`.
 5. ~~Build Portfolio Exposure and Concentration using the framework.~~ Done — see `dashlets/portfolio_exposure_dashlet.py`, `dashlets/portfolio_provider.py`, `portfolio_fixture.py`. Independent review still open (Milestone 4 evidence above).
 6. ~~Build Portfolio Scenario Impact using the framework.~~ Done — see `dashlets/portfolio_scenario_dashlet.py`, `dashlets/scenario_provider.py`, `scenario_fixture.py`. Independent review still open (Milestone 4 evidence above).
-7. **Add Issuer Research as a later use case** (next).
-8. Build and publish the FastAPI gallery.
+7. ~~Add Issuer Research as a later use case.~~ Done, and built on **real public SEC EDGAR data** rather than mock data per explicit user request -- see `dashlets/issuer_research_dashlet.py`, `dashlets/issuer_provider.py`, `issuer_fixture.py`, `scripts/generate_issuer_fixtures.py`. Independent review still open (Milestone 4 evidence above).
+8. **Build and publish the FastAPI gallery** (next) -- or do the combined Canvas-evidence pass described above first; both are reasonable next choices at this point.
 9. Add stronger governance, sandboxing, identity, observability and evaluations later.
+10. Separately (not numbered in the original task list, raised in this session): consider whether Portfolio Exposure/Scenario Impact should also move to real public data -- SEC Form 13F institutional holdings disclosures are the natural public source, but only cover long positions (no shorts), are quarterly with a ~45-day lag, and would need a second data source (CUSIP-to-sector mapping) to reproduce the current sector-classification feature. Treated as a real, separately-scoped follow-up, not folded into Issuer Research.
 
 ## Completed milestones (summary)
 
@@ -53,7 +54,7 @@ Four items remain deliberately open, not accidentally dropped: (1) independent r
 - [x] Canonical `AGENTS.md` and detailed contract docs (Milestone 4 durable-instruction prerequisites).
 - [x] Portfolio Exposure & Concentration dashlet (independent review still open).
 - [x] Portfolio Scenario Impact dashlet (independent review still open).
-- [ ] Issuer Research (Milestone 4 — not started).
+- [x] Issuer Research dashlet, built on real public SEC EDGAR data (independent review still open).
 - [x] CI (`.github/workflows/ci.yml`).
 - [ ] Gallery publication (Milestone 5 — not started).
 
@@ -66,15 +67,17 @@ Four items remain deliberately open, not accidentally dropped: (1) independent r
 - Commits: `5546e38`, `8dfd497`, `fb7085f`, `ed78a6c`, `5b0bcf7`, `1286475` (all on `navoditk-treasury-curve-reference` / `navoditk-automatic-lamp`; not yet merged to `main`). Pull request: to be opened per this session's task (see report).
 - [`docs/evidence/portfolio-exposure-reference.md`](evidence/portfolio-exposure-reference.md) — direct-FastAPI verification, fixture-mode results, provenance examples, test summaries, and a real-browser screenshot (every displayed value cross-checked against the live API and matching exactly) are complete. Canvas-specific evidence (agent-tool invocation logs, tool-isolation negative tests, process-lifecycle results, Canvas-embedded screenshot) is still TODO — no live Copilot Canvas session was available. Commits: `da18bce`, `7a15fb9`, and the standalone-screenshot follow-up.
 - [`docs/evidence/portfolio-scenario-reference.md`](evidence/portfolio-scenario-reference.md) — direct-FastAPI verification (including a hand-checked value: TechCore Inc, beta 1.3 * $2.4M * 10% equity shock = $312,000), the full test suite (164 pytest, 43 npm), and the `-$174,500` net-DV01 cross-check against an earlier FICC walkthrough are complete. Canvas-specific evidence is TODO, same reasoning as Portfolio Exposure. Commits: `79524ed`, `400bcd6`, `f106a36`, `031877f`, and the Canvas-registration/docs follow-up.
+- [`docs/evidence/issuer-research-reference.md`](evidence/issuer-research-reference.md) — direct-FastAPI verification against real recorded AAPL/MSFT data, the full test suite (216 pytest, 45 npm), and a real live-mode call against actual SEC EDGAR (GOOGL/Alphabet, not in the fixture set, returning real FY2025 revenue) are complete. Also documents a real bug found and fixed during this milestone: NVIDIA's XBRL revenue-concept migration (see Known limitations below and the dashlet's README section). Canvas-specific evidence is TODO, same reasoning as the other two. Commits: `9dddbbe`, `c61a1da`, `a385dad`, `4b71388`, and the Canvas-registration/docs follow-up.
 
 ## Known limitations
 
-*(This section historically went stale relative to `## Current status` above — as of 2026-08-26 it's been reconciled with actual repository state. Keep both in sync going forward.)*
+*(This section historically went stale relative to `## Current status` above — as of 2026-08-26 it was reconciled with actual repository state, and again on 2026-08-27 for Issuer Research. Keep both in sync going forward.)*
 
-- Hello, Treasury Curve, Portfolio Exposure and Portfolio Scenario Impact are implemented; Issuer Research is not yet built.
+- All four originally planned reference dashlets are implemented: Hello, Treasury Curve, Portfolio Exposure, Portfolio Scenario Impact, Issuer Research.
 - Treasury EOD data is official end-of-day data from Treasury.gov, **not** intraday real-time market data.
-- Neither Portfolio Exposure nor Portfolio Scenario Impact has a live data mode — both are fixture-only by design (see `docs/DATA_ACCESS.md` §2), not a gap to close later.
+- Neither Portfolio Exposure nor Portfolio Scenario Impact has a live data mode — both are fixture-only by design (see `docs/DATA_ACCESS.md` §2), not a gap to close later. SEC Form 13F institutional-holdings disclosures are a real potential public-data source for a future upgrade, but only cover long positions, are quarterly with a lag, and need a second data source for sector classification -- tracked as a separate follow-up (see `## Resume here` above), not done as part of Issuer Research.
 - Portfolio Scenario Impact's rate and spread shocks show $0 impact on the current fixture data (an all-equity book, no fixed-income holdings) — intentional and directly tested, not a defect.
+- Issuer Research's fixture mode covers exactly two companies (AAPL, MSFT), both recorded **real** SEC data (not synthetic), refreshed via `scripts/generate_issuer_fixtures.py`. Live mode covers any of SEC's ~10,388 registered tickers, but XBRL tagging is heterogeneous across filers and can migrate over time within one filer (a real bug -- NVIDIA's revenue-tag migration -- was found and fixed this session; see the dashlet's evidence doc); a ticker whose data doesn't match the concept tags this dashlet knows about returns a controlled error, not partial/best-effort data.
 - Response validation is still operation-specific rather than fully OpenAPI-schema-driven; the generic tool-schema generator also doesn't carry numeric `ge`/`le` bounds (e.g. `top_n`) into the Copilot-visible schema, though FastAPI still enforces them server-side with a 422.
 - No production sandbox — the MVP relies on a registry allowlist, `shell:false` spawning and restricted child-process environment, not process/network isolation.
 - No persistent artifact store (draft/published lifecycle, versioning, cloning) exists yet.
@@ -83,8 +86,8 @@ Four items remain deliberately open, not accidentally dropped: (1) independent r
 - No secret scanning exists in CI (Ruff/Pytest/schema-check/npm test do) — see `docs/ARCHITECTURE.md` §10 and Milestone 5 below.
 - Only one dashlet process runs at a time; there is no concurrent multi-dashlet or cross-dashlet composition view.
 - Dashlet registration (`DASHLET_REGISTRY` in `dashlet-registry.mjs`) is manual; there is no auto-discovery yet.
-- Live-Canvas evidence (agent-tool invocation logs, tool-isolation checks, process-lifecycle checks, Canvas-embedded screenshots) and independent code review are deliberately deferred for Portfolio Exposure and Portfolio Scenario Impact — see `## Resume here` above.
-- The Canvas `ToolProxy`'s existing 5-second request timeout can be exceeded by live Treasury.gov EOD fetches (observed 8–19s in one session); this surfaces as an aborted agent-tool call rather than a wrong answer, and is a pre-existing, unmodified setting — see `docs/evidence/treasury-reference.md` for detail.
+- Live-Canvas evidence (agent-tool invocation logs, tool-isolation checks, process-lifecycle checks, Canvas-embedded screenshots) and independent code review are deliberately deferred for Portfolio Exposure, Portfolio Scenario Impact and Issuer Research — see `## Resume here` above.
+- The Canvas `ToolProxy`'s existing 5-second request timeout can be exceeded by live Treasury.gov EOD fetches (observed 8–19s in one session); this surfaces as an aborted agent-tool call rather than a wrong answer, and is a pre-existing, unmodified setting — see `docs/evidence/treasury-reference.md` for detail. The same timeout risk plausibly applies to Issuer Research's live SEC EDGAR calls but has not yet been specifically measured through the Canvas tool proxy (only verified via direct FastAPI/uvicorn, which has no such timeout).
 
 ## Environment
 
@@ -229,10 +232,10 @@ timeout setting, not a fixture-fallback defect).
 - [x] Review workflow/skill created.
 - [x] Portfolio Exposure generated using framework.
 - [x] Portfolio Scenario Impact generated using framework.
-- [ ] Issuer Research generated or recorded as the first post-sprint extension.
-- [x] Every completed business use case (Treasury, Portfolio Exposure, Portfolio Scenario Impact) has at least one verified agent tool.
-- [!] Independent reviews completed. Portfolio Exposure and Portfolio Scenario Impact were both implemented by Claude Code in this session; per AGENTS.md §8 / AGENTIC_DEVELOPMENT.md §10 both still need an independent review pass (a different agent or a human) before being considered fully done.
-- [x] No application-specific framework changes were required for Portfolio Exposure or Portfolio Scenario Impact (`dashlet_framework` used unchanged both times; only dashlet-specific modules were added, mirroring the existing Treasury pattern). Portfolio Scenario Impact did extend `portfolio_fixture.Position` with optional sensitivity fields — an *application*-level extension by explicit user decision, not a framework change.
+- [x] Issuer Research generated using framework, built on real public SEC EDGAR data per explicit user request (not the first post-sprint extension -- completed within the same sprint as the other three).
+- [x] Every completed business use case (Treasury, Portfolio Exposure, Portfolio Scenario Impact, Issuer Research) has at least one verified agent tool.
+- [!] Independent reviews completed. Portfolio Exposure, Portfolio Scenario Impact and Issuer Research were all implemented by Claude Code in this session; per AGENTS.md §8 / AGENTIC_DEVELOPMENT.md §10 all three still need an independent review pass (a different agent or a human) before being considered fully done.
+- [x] No application-specific framework changes were required for Portfolio Exposure, Portfolio Scenario Impact or Issuer Research (`dashlet_framework` used unchanged all three times; only dashlet-specific modules were added, mirroring the existing Treasury pattern). Portfolio Scenario Impact extended `portfolio_fixture.Position` with optional sensitivity fields, and the Issuer Research work fixed a real bug in `scripts/generate_tool_schemas.py`'s string-escaping -- both application/tooling-level changes by explicit decision or necessity, not framework changes.
 
 Evidence (durable instructions):
 
@@ -338,6 +341,75 @@ the framework) was extended by explicit user decision -- see the design-decision
 Known gaps: same as Portfolio Exposure -- no live Canvas/browser verification (no Chrome
 extension connected in this session), verified instead via a real uvicorn process boot, direct
 curl checks, and pytest assertions on the exact embedded HTML/JS content.
+```
+
+Evidence (Issuer Research):
+
+```text
+Date: 2026-08-27
+Generation prompt: user asked which of the four reference use cases had public data sources
+(Treasury already did via Treasury.gov), whether Portfolio Exposure/Scenario Impact could too,
+and to proceed with Issuer Research next specifically using real public data rather than mock
+data. Agent researched SEC EDGAR's public JSON APIs live (ticker->CIK map, submissions, XBRL
+company facts) before designing anything, confirmed the required User-Agent header behavior
+empirically, then asked one explicit design question -- should live mode accept any of SEC's
+~10,388 registered tickers, or a curated shortlist -- before implementing. User chose "any
+valid ticker."
+Implementing agent: Claude Code (this session), following the same contract docs as the prior
+two dashlets.
+Files added: issuer_fixture.py (SEC XBRL extraction/normalization models and functions, shared
+between the live provider and the fixture-generation script); dashlets/issuer_provider.py
+(FixtureIssuerProvider reading recorded real SEC snapshots; PublicIssuerProvider fetching live
+from data.sec.gov for any ticker, with a cached ticker->CIK lookup and the SEC-required
+User-Agent header); scripts/generate_issuer_fixtures.py (regenerates fixtures/issuer/*.json
+from real live SEC data through the same code path PublicIssuerProvider uses);
+fixtures/issuer/AAPL.json and MSFT.json (genuine recorded SEC data, not synthetic, generated
+through the actual shipped extraction code); dashlets/issuer_research_dashlet.py
+(get_company_facts, get_financial_trends, list_recent_filings, all tagged agent-tool;
+data_mode typed directly as the IssuerDataMode enum so the fixture/live constraint is native
+to OpenAPI, matching the Treasury pattern rather than a manually-validated string); 58 new
+tests across four files (18 in tests/test_issuer_fixture.py, 12 in
+tests/test_issuer_provider.py, 21 in tests/test_issuer_research_dashlet.py, plus updates).
+Bug found and fixed: while verifying against real companies beyond the two fixture tickers
+(Apple, Microsoft), a live call for NVIDIA returned a suspiciously old "latest" fiscal year
+(2022, when the actual current year should be far more recent). Root cause: NVIDIA migrated
+its XBRL revenue tag from RevenueFromContractWithCustomerExcludingAssessedTax (used through
+FY2022) to the plain Revenues tag (FY2023 onward); the original "first non-empty concept in
+priority order" selection logic silently locked onto the superseded tag. Fixed via
+_most_recent_concept, which picks whichever candidate concept's data covers the most recent
+period end; verified against real Apple, Microsoft and NVIDIA data with a regression test
+reproducing the exact failure mode; regenerated the committed fixtures through the fixed code
+(output unchanged for AAPL/MSFT, confirming no regression).
+Second bug found and fixed (in shared infrastructure, not this dashlet's own code): while
+regenerating tool schemas after registering this dashlet, scripts/generate_tool_schemas.py
+crashed with a JS syntax error. Root cause: its string-escaping (`repr(value).replace("'",
+'"')`) is not safe for any description string containing a quote character -- this dashlet's
+data_mode description contains 'fixture'/'live' in single quotes, and the naive replace
+corrupted them into unterminated JS string literals. Fixed by replacing the entire hand-rolled
+JS-literal serializer with json.dumps() (a strict subset of JS syntax, correctly escapes
+everything) plus a small runtime deepFreeze() helper embedded in the generated file, verified
+to still deep-freeze every nested level (top object, each schema, each schema's properties and
+required array) exactly as the existing immutability tests expect.
+Correctness cross-checks: TechCore-style value check (TechCore Inc precedent from Portfolio
+Exposure) mirrored here -- fixture-mode AAPL facts checked field-by-field against the real
+recorded values; a real, unmocked live-mode call against actual SEC EDGAR for GOOGL (Alphabet
+Inc., not in the fixture set) returned real FY2025 revenue ($402,836,000,000) through a
+genuinely running uvicorn process, not just TestClient.
+Test command: uv run pytest -> 216 passed; npm test -> 45 passed; uv run python
+scripts/generate_tool_schemas.py --check -> OK; uv run ruff check . -> clean.
+Reviewing agents: not yet completed -- see Milestone 4 checklist "Independent reviews
+completed" above.
+PRs: committed directly to main in five small units (extraction/normalization module;
+providers; fixture-generation script + real fixture data; dashlet+tests; Canvas
+registration+docs+generator fix), each independently green.
+Framework changes: none to dashlet_framework. issuer_fixture.py, dashlets/issuer_provider.py
+and scripts/generate_issuer_fixtures.py are new application/tooling modules, not framework
+changes; the generate_tool_schemas.py fix is a bug fix to existing shared tooling, not a
+framework change or a speculative extension.
+Known gaps: same as the other two -- no live Canvas/browser verification (no Chrome extension
+connected in this session). Unlike the other two, this dashlet's live-mode data path *was*
+exercised for real (see "Correctness cross-checks" above), just not through an actual Canvas
+session specifically.
 ```
 
 ## Milestone 5 — CI and publication

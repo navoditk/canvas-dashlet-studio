@@ -122,6 +122,29 @@ test("compare_scenario_impacts exposes two full independent shock specifications
     assert.ok(!Object.hasOwn(schema.properties, "data_mode"));
 });
 
+test("get_company_facts requires ticker and data_mode, data_mode is an enum of exactly fixture/live", () => {
+    const schema = AGENT_TOOL_PARAMETER_SCHEMAS.get_company_facts;
+    assert.deepEqual(Object.keys(schema.properties).sort(), ["data_mode", "ticker"]);
+    assert.deepEqual([...schema.required].sort(), ["data_mode", "ticker"]);
+    assert.deepEqual(schema.properties.data_mode.enum, ["fixture", "live"]);
+    // Regression check: a prior generator bug corrupted this description's
+    // embedded single-quoted 'fixture'/'live' references into invalid JS
+    // syntax. Asserting the literal text survives generation intact.
+    assert.ok(schema.properties.data_mode.description.includes("'fixture'"));
+    assert.ok(schema.properties.data_mode.description.includes("'live'"));
+});
+
+test("get_financial_trends and list_recent_filings expose their own optional parameters plus required ticker/data_mode", () => {
+    const trends = AGENT_TOOL_PARAMETER_SCHEMAS.get_financial_trends;
+    assert.deepEqual(Object.keys(trends.properties).sort(), ["data_mode", "ticker", "years"]);
+    assert.deepEqual([...trends.required].sort(), ["data_mode", "ticker"]);
+    assert.equal(trends.properties.years.type, "integer");
+
+    const filings = AGENT_TOOL_PARAMETER_SCHEMAS.list_recent_filings;
+    assert.deepEqual(Object.keys(filings.properties).sort(), ["data_mode", "form_type", "limit", "ticker"]);
+    assert.deepEqual([...filings.required].sort(), ["data_mode", "ticker"]);
+});
+
 test("schema map and each schema's properties are frozen (immutable)", () => {
     assert.ok(Object.isFrozen(AGENT_TOOL_PARAMETER_SCHEMAS));
     for (const schema of Object.values(AGENT_TOOL_PARAMETER_SCHEMAS)) {

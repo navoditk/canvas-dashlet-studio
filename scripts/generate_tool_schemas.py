@@ -19,6 +19,7 @@ stale relative to the current dashlet source:
 """
 from __future__ import annotations
 
+import json
 import sys
 from pathlib import Path
 
@@ -131,41 +132,30 @@ def collect_agent_tool_schemas(module_targets: list[str]) -> dict[str, dict]:
     return schemas
 
 
-def _js_literal(value, indent: int = 0) -> str:
-    pad = "    " * indent
-    inner_pad = "    " * (indent + 1)
-    if isinstance(value, dict):
-        if not value:
-            return "Object.freeze({})"
-        lines = [f"{inner_pad}{key!r}: {_js_literal(val, indent + 1)}," for key, val in value.items()]
-        body = "\n".join(lines).replace("'", '"')
-        return "Object.freeze({\n" + body + f"\n{pad}}})"
-    if isinstance(value, list):
-        if not value:
-            return "Object.freeze([])"
-        items = ", ".join(repr(item).replace("'", '"') for item in value)
-        return f"Object.freeze([{items}])"
-    if isinstance(value, bool):
-        return "true" if value else "false"
-    if isinstance(value, str):
-        return repr(value).replace("'", '"')
-    return str(value)
-
-
 def render_module(schemas: dict[str, dict]) -> str:
-    entries = "\n".join(
-        f"    {operation_id!r}: {_js_literal(schema, 1)},".replace("'", '"')
-        for operation_id, schema in schemas.items()
-    )
+    # json.dumps is used rather than a hand-rolled Python-repr-to-JS-literal
+    # transform: a prior version did `repr(value).replace("'", '"')`, which
+    # is not safe for any description string containing a quote character
+    # (e.g. "'fixture' uses..." in issuer_research_dashlet.py) -- it
+    # corrupted the embedded quotes into a JS syntax error. JSON is a strict
+    # subset of JS object/array/string literal syntax, so json.dumps output
+    # is directly valid here and correctly escapes everything.
+    schemas_json = json.dumps(schemas, indent=4)
     return f"""// GENERATED FILE -- DO NOT EDIT BY HAND.
 // Regenerate with: uv run python {GENERATOR_RELATIVE_PATH}
 //
 // Each entry is derived from the real OpenAPI output of an agent-tool-tagged
 // FastAPI operation (see dashlets/*.py), not hand-maintained per operation.
 
-export const AGENT_TOOL_PARAMETER_SCHEMAS = Object.freeze({{
-{entries}
-}});
+function deepFreeze(value) {{
+    if (value && typeof value === "object" && !Object.isFrozen(value)) {{
+        Object.values(value).forEach(deepFreeze);
+        Object.freeze(value);
+    }}
+    return value;
+}}
+
+export const AGENT_TOOL_PARAMETER_SCHEMAS = deepFreeze({schemas_json});
 """
 
 
