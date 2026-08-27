@@ -415,11 +415,11 @@ session specifically.
 ## Milestone 5 — CI and publication
 
 - [ ] Gallery mounts every validated dashlet.
-- [ ] Ruff passes.
-- [ ] Pytest passes.
-- [ ] Contract validation passes for every dashlet.
-- [ ] Tool-schema validation passes.
-- [ ] Secret scan passes.
+- [x] Ruff passes. Enforced in CI on every push/PR (`.github/workflows/ci.yml`) since 0eae791.
+- [x] Pytest passes. Enforced in CI on every push/PR; 216 tests as of the Issuer Research milestone.
+- [x] Contract validation passes for every dashlet. `tests/test_dashlet_contract.py` + `dashlet-registry.test.mjs` run generically against every dashlet in `DASHLET_MODULES`, enforced in CI.
+- [x] Tool-schema validation passes. `scripts/generate_tool_schemas.py --check` enforced in CI; fails the build if the generated file drifts from source.
+- [ ] Secret scan passes. Not implemented — no secret-scanning step exists in CI at all yet (see `docs/ARCHITECTURE.md` §10).
 - [ ] GitHub repository published.
 - [ ] Render deployment succeeds.
 - [ ] Direct dashlet URL verified.
@@ -429,7 +429,8 @@ Evidence:
 
 ```text
 Repository URL:
-CI run:
+CI run: .github/workflows/ci.yml, green on every push to main since 0eae791 -- see
+docs/PROGRESS.md "Current status" and the commit history for individual run results.
 Gallery URL:
 Dashlet URLs:
 Iframe test:
