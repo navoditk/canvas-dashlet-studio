@@ -73,7 +73,7 @@ Verified, official documentation for every technology used in this project. Ever
 
 ## Optional hosting/publication
 
-- **Deploy a FastAPI app — Render** — <https://render.com/docs/deploy-fastapi> (optional) — Referenced by `docs/PROPOSAL.md`/`docs/ROADMAP.md` for the future Milestone 5 gallery-hosting stage. Not required until that stage begins; no gallery or Render deployment exists yet in this repository.
+- **Deploy a FastAPI app — Render** — <https://render.com/docs/deploy-fastapi> (optional) — `gallery.py` (repo root) mounts every validated dashlet and `render.yaml` is a turnkey Render Blueprint for it (see `docs/ARCHITECTURE.md` §9). No Render deployment has actually been run yet — that requires the repo owner's own Render account.
 
 ---
 

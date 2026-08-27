@@ -11,17 +11,17 @@ Update this file at the end of each implementation block. Mark an item complete 
 
 ## Current status
 
-- **Overall milestone status:** the Treasury Curve reference dashlet is complete through Milestone 3. CI, the shared `dashlet_framework` package, generic OpenAPI-derived tool schemas, and reusable contract validation (originally Resume-here tasks 1–4) are done. Milestone 4's durable-instruction prerequisites are done. All four originally planned reference dashlets are now built: Portfolio Exposure & Concentration (task 5), Portfolio Scenario Impact (task 6), and Issuer Research (task 7) — all three pending independent review (see Milestone 4 evidence above). Milestone 4's business-use-case work is complete; remaining work is Milestone 5 (gallery) and stronger governance/observability.
+- **Overall milestone status:** the Treasury Curve reference dashlet is complete through Milestone 3. CI, the shared `dashlet_framework` package, generic OpenAPI-derived tool schemas, and reusable contract validation (originally Resume-here tasks 1–4) are done. Milestone 4's durable-instruction prerequisites are done. All four originally planned reference dashlets are now built: Portfolio Exposure & Concentration (task 5), Portfolio Scenario Impact (task 6), and Issuer Research (task 7) — all three pending independent review (see Milestone 4 evidence above). Milestone 4's business-use-case work is complete. Milestone 5's gallery (`gallery.py`, task 8) is also now built and tested; remaining Milestone 5 work is an actual Render deployment (requires the repo owner's own account) and secret scanning, plus stronger governance/observability generally.
 - **Latest validation date:** 2026-08-27.
 - **What works today:** Hello, Treasury Curve, Portfolio Exposure, Portfolio Scenario Impact and Issuer Research all run under the Dashlet Studio Canvas extension, built on a shared `dashlet_framework` package (`create_dashlet_app`, `AGENT_TOOL_TAG`, `Provenance`, `DashletErrorDetail`/`DashletErrorResponse`) instead of duplicated per-dashlet boilerplate; every dashlet exposes `/health` and `/metadata`. A user can switch between any of the five, view it in the iframe, and ask Copilot to invoke its approved agent tools. Treasury exposes `get_treasury_curve`, `get_treasury_curve_slopes` and `compare_treasury_curves` with an explicit fixture/EOD `data_mode`. Portfolio Exposure exposes `get_portfolio_exposures`, `get_top_concentrations` and `compare_portfolio_exposures` from deterministic mock positions (fixture-only, no live mode). Portfolio Scenario Impact exposes `run_portfolio_scenario`, `get_scenario_contributions` and `compare_scenario_impacts` — deterministic rate/spread/equity shock impact on the *same* mock positions. Issuer Research exposes `get_company_facts`, `get_financial_trends` and `list_recent_filings` reading real data directly from SEC EDGAR's public APIs (`data.sec.gov`) — `fixture` mode uses two recorded real snapshots (AAPL, MSFT), `live` mode fetches current data for any of ~10,388 SEC-registered tickers, both with an explicit required `data_mode` typed as a real Python enum (so the constraint shows up natively in OpenAPI, matching the Treasury pattern). Agent-tool parameter schemas are generated from each dashlet's real `app.openapi()` output by `scripts/generate_tool_schemas.py`; CI fails if the committed generated file drifts from source. That generator itself had a real bug fixed this session (naive Python-repr-to-JS string escaping broke on any description containing a quote character) -- now uses `json.dumps()` plus a runtime `deepFreeze()` helper instead of hand-rolled JS-literal serialization. Reusable contract validation (`tests/test_dashlet_contract.py`, `dashlet-registry.test.mjs`) checks every registered dashlet automatically -- both Portfolio Scenario Impact and Issuer Research needed zero new contract-test code. A GitHub Actions workflow (`.github/workflows/ci.yml`) runs Ruff, Pytest, the schema-drift check and `npm test` on every push/PR.
 
 ## Resume here
 
-The next developer should start with **Task 8** below before anything else in this repository.
+The next developer should start with **the combined live-Canvas evidence pass** described below, or with an actual Render deployment (task 8 continuation) — both are open, either is a reasonable starting point.
 
-Six items remain deliberately open, not accidentally dropped: (1) independent review passes for Portfolio Exposure, Portfolio Scenario Impact and Issuer Research (see Milestone 4 evidence above), and (2) live-Canvas evidence for all three (agent-tool invocation logs, tool-isolation checks, process-lifecycle checks, Canvas-embedded screenshots -- see `docs/evidence/portfolio-exposure-reference.md`, `docs/evidence/portfolio-scenario-reference.md`, `docs/evidence/issuer-research-reference.md`). Both kinds of gap were explicitly deprioritized starting 2026-08-26 to keep moving on Milestone 4's remaining business use cases rather than block on them; direct-FastAPI verification and the full automated test suite already exist for all three dashlets (plus a real cross-verified browser screenshot for Portfolio Exposure, and a real live-mode SEC EDGAR call for Issuer Research), so this is not "unverified," just "not yet verified inside an actual Canvas session." With three dashlets now sharing this gap, doing one combined live-Canvas evidence pass across all of them (plus Treasury, to refresh it) is more efficient than three separate passes -- a strong candidate for the next dedicated session, now that Milestone 4's business-use-case work is otherwise complete.
+Six items remain deliberately open, not accidentally dropped: (1) independent review passes for Portfolio Exposure, Portfolio Scenario Impact and Issuer Research (see Milestone 4 evidence above), and (2) live-Canvas evidence for all three (agent-tool invocation logs, tool-isolation checks, process-lifecycle checks, Canvas-embedded screenshots -- see `docs/evidence/portfolio-exposure-reference.md`, `docs/evidence/portfolio-scenario-reference.md`, `docs/evidence/issuer-research-reference.md`). Both kinds of gap were explicitly deprioritized starting 2026-08-26 to keep moving on Milestone 4's remaining business use cases rather than block on them; direct-FastAPI verification and the full automated test suite already exist for all three dashlets (plus a real cross-verified browser screenshot for Portfolio Exposure, and a real live-mode SEC EDGAR call for Issuer Research), so this is not "unverified," just "not yet verified inside an actual Canvas session." With three dashlets now sharing this gap, doing one combined live-Canvas evidence pass across all of them (plus Treasury, to refresh it) is more efficient than three separate passes -- a strong candidate for the next dedicated session, now that Milestone 4's business-use-case work is otherwise complete. Separately, the gallery (`gallery.py`) is built and tested but not deployed — an actual Render deployment (`render.yaml`) requires the repo owner's own Render account and cannot be done by an agent unattended.
 
-**Recommended branch:** `feature/canvas-evidence-pass` (or `feature/gallery` if proceeding straight to Milestone 5 instead)
+**Recommended branch:** `feature/canvas-evidence-pass` (or a Render-deployment branch, since gallery build/test work is already merged to `main`)
 
 1. ~~Add GitHub Actions for Ruff, Pytest and Node tests.~~ Done — see `.github/workflows/ci.yml`.
 2. ~~Add reusable dashlet/OpenAPI contract validation.~~ Done — see `tests/test_dashlet_contract.py` and `.github/extensions/dashlet-studio/dashlet-registry.test.mjs`. `DASHLET_REGISTRY`/`REGISTERED_TOOL_IDS`/`TOOL_DESCRIPTIONS` were extracted from `extension.mjs` into `dashlet-registry.mjs` so they're importable by tests without triggering `joinSession()`.
@@ -30,7 +30,7 @@ Six items remain deliberately open, not accidentally dropped: (1) independent re
 5. ~~Build Portfolio Exposure and Concentration using the framework.~~ Done — see `dashlets/portfolio_exposure_dashlet.py`, `dashlets/portfolio_provider.py`, `portfolio_fixture.py`. Independent review still open (Milestone 4 evidence above).
 6. ~~Build Portfolio Scenario Impact using the framework.~~ Done — see `dashlets/portfolio_scenario_dashlet.py`, `dashlets/scenario_provider.py`, `scenario_fixture.py`. Independent review still open (Milestone 4 evidence above).
 7. ~~Add Issuer Research as a later use case.~~ Done, and built on **real public SEC EDGAR data** rather than mock data per explicit user request -- see `dashlets/issuer_research_dashlet.py`, `dashlets/issuer_provider.py`, `issuer_fixture.py`, `scripts/generate_issuer_fixtures.py`. Independent review still open (Milestone 4 evidence above).
-8. **Build and publish the FastAPI gallery** (next) -- or do the combined Canvas-evidence pass described above first; both are reasonable next choices at this point.
+8. ~~Build the FastAPI gallery.~~ Done -- see `gallery.py`, `tests/test_gallery.py`, `render.yaml`, commit `002b717`. Actual Render deployment still open (requires the repo owner's own account); the combined Canvas-evidence pass described above remains open too -- both are reasonable next choices at this point.
 9. Add stronger governance, sandboxing, identity, observability and evaluations later.
 10. Separately (not numbered in the original task list, raised in this session): consider whether Portfolio Exposure/Scenario Impact should also move to real public data -- SEC Form 13F institutional holdings disclosures are the natural public source, but only cover long positions (no shorts), are quarterly with a ~45-day lag, and would need a second data source (CUSIP-to-sector mapping) to reproduce the current sector-classification feature. Treated as a real, separately-scoped follow-up, not folded into Issuer Research.
 
@@ -56,7 +56,7 @@ Six items remain deliberately open, not accidentally dropped: (1) independent re
 - [x] Portfolio Scenario Impact dashlet (independent review still open).
 - [x] Issuer Research dashlet, built on real public SEC EDGAR data (independent review still open).
 - [x] CI (`.github/workflows/ci.yml`).
-- [ ] Gallery publication (Milestone 5 — not started).
+- [x] Gallery built and tested (`gallery.py`, `tests/test_gallery.py`); Render deployment not yet run (Milestone 5).
 
 ## Evidence
 
@@ -82,7 +82,7 @@ Six items remain deliberately open, not accidentally dropped: (1) independent re
 - No production sandbox — the MVP relies on a registry allowlist, `shell:false` spawning and restricted child-process environment, not process/network isolation.
 - No persistent artifact store (draft/published lifecycle, versioning, cloning) exists yet.
 - No production identity/authorization model exists; the Canvas control API uses a per-session control token only.
-- No hosted gallery exists yet; all verification has been against locally spawned Uvicorn processes.
+- The gallery (`gallery.py`) exists and is tested (`tests/test_gallery.py`), but no *deployment* exists yet; all verification so far has been against a locally spawned Uvicorn process, not a hosted URL. `render.yaml` is a turnkey Render Blueprint, but running the actual deployment requires the repo owner's own Render account.
 - No secret scanning exists in CI (Ruff/Pytest/schema-check/npm test do) — see `docs/ARCHITECTURE.md` §10 and Milestone 5 below.
 - Only one dashlet process runs at a time; there is no concurrent multi-dashlet or cross-dashlet composition view.
 - Dashlet registration (`DASHLET_REGISTRY` in `dashlet-registry.mjs`) is manual; there is no auto-discovery yet.
@@ -414,26 +414,32 @@ session specifically.
 
 ## Milestone 5 — CI and publication
 
-- [ ] Gallery mounts every validated dashlet.
+- [x] Gallery mounts every validated dashlet. `gallery.py` mounts all five dashlets under `/apps/<id>/` in a single FastAPI process; `tests/test_gallery.py` derives its expected app set from `DASHLET_MODULES` so this stays enforced as new dashlets are added, not just true at the moment it was written. Commit `002b717`.
 - [x] Ruff passes. Enforced in CI on every push/PR (`.github/workflows/ci.yml`) since 0eae791.
-- [x] Pytest passes. Enforced in CI on every push/PR; 216 tests as of the Issuer Research milestone.
+- [x] Pytest passes. Enforced in CI on every push/PR; 227 tests as of the gallery milestone (216 at the Issuer Research milestone + 11 new gallery tests).
 - [x] Contract validation passes for every dashlet. `tests/test_dashlet_contract.py` + `dashlet-registry.test.mjs` run generically against every dashlet in `DASHLET_MODULES`, enforced in CI.
 - [x] Tool-schema validation passes. `scripts/generate_tool_schemas.py --check` enforced in CI; fails the build if the generated file drifts from source.
 - [ ] Secret scan passes. Not implemented — no secret-scanning step exists in CI at all yet (see `docs/ARCHITECTURE.md` §10).
-- [ ] GitHub repository published.
-- [ ] Render deployment succeeds.
-- [ ] Direct dashlet URL verified.
-- [ ] iframe embedding verified.
+- [x] GitHub repository published. `https://github.com/navoditk/canvas-dashlet-studio`, confirmed public (`gh repo view --json visibility` → `PUBLIC`).
+- [ ] Render deployment succeeds. `render.yaml` (repo root) is a turnkey Render Blueprint for `gallery.py`; no deployment has actually been run yet — that requires the repo owner's own Render account and is not something this agent can do on its behalf.
+- [ ] Direct dashlet URL verified. Blocked on the Render deployment above.
+- [ ] iframe embedding verified. Blocked on the Render deployment above.
 
 Evidence:
 
 ```text
-Repository URL:
+Repository URL: https://github.com/navoditk/canvas-dashlet-studio (public)
 CI run: .github/workflows/ci.yml, green on every push to main since 0eae791 -- see
 docs/PROGRESS.md "Current status" and the commit history for individual run results.
-Gallery URL:
-Dashlet URLs:
-Iframe test:
+Gallery: gallery.py + tests/test_gallery.py, commit 002b717. Verified locally via a real
+uvicorn boot (uvicorn gallery:app): every mounted dashlet's /health and / are reachable,
+mount-relative fetch("./api/...") calls resolve correctly under the mount, and business-logic
+values through the mount exactly match each dashlet's standalone values (Portfolio Exposure
+net=$10,650,000, Portfolio Scenario Impact total impact=$1,154,000 at a 10% equity shock,
+Issuer Research AAPL revenue=$416,161,000,000).
+Gallery URL: not deployed yet (render.yaml exists, deployment not run).
+Dashlet URLs: not deployed yet.
+Iframe test: not deployed yet.
 ```
 
 ## Stretch dashlets

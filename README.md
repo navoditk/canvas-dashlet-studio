@@ -208,6 +208,18 @@ As an agent tool, ask Copilot, for example:
 
 Copilot selects `get_financial_trends`, validates `ticker="NVDA"`, `data_mode="live"` and `years=5` against the generated schema, forwards the request to `/api/issuer/trends`, and returns the same normalized, source-linked trend data the iframe chart shows — real SEC data, not a fictional number.
 
+## 18a. Gallery (hosting all dashlets in one process)
+
+`gallery.py` mounts every validated dashlet under one FastAPI process, at `/apps/<id>/` — one place to browse all of them, and the shape a real deployment would take:
+
+```bash
+uv run uvicorn gallery:app --reload
+```
+
+Then open `http://127.0.0.1:8000/` for a landing page linking to `/apps/hello/`, `/apps/treasury-curve/`, `/apps/portfolio-exposure/`, `/apps/portfolio-scenario/` and `/apps/issuer-research/`. Each mounted dashlet is the exact same FastAPI app used standalone — verified directly by `tests/test_gallery.py`, which also fails if a dashlet is ever added to `scripts/generate_tool_schemas.py`'s `DASHLET_MODULES` without a matching `gallery.py` entry, so the gallery can't silently fall behind.
+
+`render.yaml` (repo root) is a turnkey [Render](https://render.com/docs/deploy-fastapi) Blueprint for deploying `gallery.py`. No deployment has actually been run yet — that step requires the repo owner's own Render account.
+
 ## 19. Evidence and screenshots
 
 See [`docs/evidence/treasury-reference.md`](docs/evidence/treasury-reference.md) for the full validation record: direct FastAPI checks, live Canvas agent-tool invocations, tool-isolation negative tests, process-lifecycle results, and Python/Node test summaries.
@@ -220,6 +232,8 @@ A genuine Canvas screenshot (EOD mode) is included above; see [`docs/evidence/tr
 
 ```text
 AGENTS.md                          Canonical instructions for any agent (or human) changing this repository
+gallery.py                         Mounts every validated dashlet under one FastAPI process (/apps/<id>/)
+render.yaml                        Turnkey Render Blueprint for deploying gallery.py (not yet deployed)
 dashlet_framework/                 Shared app factory, agent-tool tag constant, provenance/error models
 dashlets/                          Dashlet FastAPI applications (Hello, Treasury Curve, Portfolio Exposure,
                                     Portfolio Scenario Impact, Issuer Research) + their providers
@@ -251,7 +265,7 @@ docs/                              Installation, architecture, roadmap, progress
 - Only one dashlet process runs at a time; there is no concurrent multi-dashlet or cross-dashlet composition view yet.
 - Dashlet registration (`DASHLET_REGISTRY` in `dashlet-registry.mjs`) is manual; there is no auto-discovery yet.
 - No production sandbox, persistent artifact store, or production identity/authorization model.
-- No hosted gallery; all verification has been against locally spawned processes.
+- The gallery (`gallery.py`, §18a) exists and is tested, but is not deployed anywhere yet; all verification so far has been against a locally spawned process, not a hosted URL.
 - See [`docs/PROGRESS.md`](docs/PROGRESS.md) "Known limitations" for the complete list.
 
 ## 22. Roadmap

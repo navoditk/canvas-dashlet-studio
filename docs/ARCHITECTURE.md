@@ -178,23 +178,30 @@ The Canvas should initiate and display this workflow; it should not bypass revie
 
 ## 9. Gallery hosting
 
-The gallery imports and mounts validated applications:
+`gallery.py` (repo root) imports and mounts every validated dashlet under one FastAPI process, keyed by the same dashlet id used elsewhere in the repo (`GALLERY_APPS` in `gallery.py`, `DASHLET_REGISTRY` in `dashlet-registry.mjs`, `DASHLET_MODULES` in `scripts/generate_tool_schemas.py`):
 
 ```python
-app.mount("/apps/treasury-curve", treasury_curve_app)
-app.mount("/apps/portfolio-exposure", portfolio_exposure_app)
-app.mount("/apps/scenario-impact", scenario_impact_app)
-app.mount("/apps/issuer-research", issuer_research_app)
+GALLERY_APPS = {
+    "hello": ("Hello Dashlet", hello_app),
+    "treasury-curve": ("Treasury Curve", treasury_curve_app),
+    "portfolio-exposure": ("Portfolio Exposure", portfolio_exposure_app),
+    "portfolio-scenario": ("Portfolio Scenario Impact", portfolio_scenario_app),
+    "issuer-research": ("Issuer Research", issuer_research_app),
+}
+for dashlet_id, (_display_name, sub_app) in GALLERY_APPS.items():
+    app.mount(f"/apps/{dashlet_id}", sub_app)
 ```
 
-Example URLs:
+Example URLs (once deployed; see `render.yaml`):
 
 ```text
 https://host.example/apps/treasury-curve/
 https://host.example/apps/portfolio-exposure/
-https://host.example/apps/scenario-impact/
+https://host.example/apps/portfolio-scenario/
 https://host.example/apps/issuer-research/
 ```
+
+Each mounted app's HTML uses the mount-relative `fetch("./api/...")` convention from §5, which is what lets the identical dashlet file run unmodified whether served standalone at `/` or mounted here under `/apps/<id>/` — this is verified directly by `tests/test_gallery.py`, not just assumed. That test file also derives its expected app set from `DASHLET_MODULES`, so a dashlet added there without a matching `GALLERY_APPS` entry fails the test instead of silently missing from the gallery.
 
 ## 10. Security boundary in the MVP
 

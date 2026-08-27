@@ -1,0 +1,18 @@
+# Render Blueprint for the Canvas Dashlet Studio gallery (gallery.py).
+# https://render.com/docs/deploy-fastapi | https://render.com/docs/blueprint-spec
+#
+# This is a turnkey deploy config, not an active deployment: no Render
+# service is running from this file yet (see docs/PROGRESS.md Milestone 5).
+# To deploy: connect this repo in the Render dashboard as a Blueprint, or
+# run `render blueprint launch` with the Render CLI, using your own account.
+services:
+  - type: web
+    name: canvas-dashlet-studio-gallery
+    runtime: python
+    plan: free
+    buildCommand: "pip install uv && uv sync --no-dev"
+    startCommand: "uv run uvicorn gallery:app --host 0.0.0.0 --port $PORT"
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12"
