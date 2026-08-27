@@ -24,6 +24,22 @@ Render prototype runtime
     └── provides direct and embeddable URLs
 ```
 
+## 1a. Technology stack, mapped to the three tiers in §1
+
+| Tier (§1) | Component | Technology | Role |
+|---|---|---|---|
+| Local authoring runtime | Canvas extension | JavaScript / Node.js (`.github/extensions/dashlet-studio/`) | Process launcher, health polling, iframe host, tool proxy, tool-schema registry |
+| Local authoring runtime | Dashlet | Python, FastAPI, Uvicorn (`dashlets/`) | Embedded HTML/Alpine.js/Tailwind/Plotly UI + typed REST endpoints, single source for both the iframe and the agent tool |
+| Local authoring runtime | Shared framework | `dashlet_framework/` (pure Python, no new dependency) | `create_dashlet_app`, `agent-tool` tag constant, provenance/error models — the one piece of code shared across dashlets |
+| Local authoring runtime | Contracts | Pydantic, OpenAPI | Typed request/response models; OpenAPI is also what `scripts/generate_tool_schemas.py` reads to derive Copilot tool schemas (§6) |
+| Local authoring runtime | Data | HTTPX, provider adapters, deterministic JSON fixtures, [SEC EDGAR public APIs](https://www.sec.gov/os/webmaster-faq#developers) | Fixture/EOD/live data behind each dashlet's typed provider interface |
+| GitHub tier | Source control + CI | Git, GitHub Actions (`.github/workflows/ci.yml`) | Ruff, Pytest, generic dashlet-contract validation, tool-schema drift check, `npm test` — gate every push/PR to `main` |
+| GitHub tier | Quality tooling | Pytest, FastAPI `TestClient`, Ruff, Node's built-in test runner | Automated verification, no real network calls in CI (see `docs/DATA_ACCESS.md` §6) |
+| Render tier | Gallery host | FastAPI, Uvicorn, `uv` (`gallery.py`, `render.yaml`) | Mounts every validated dashlet under one process at `/apps/{id}/`; deployed live at <https://canvas-dashlet-studio-gallery.onrender.com> (see `docs/evidence/gallery-deployment.md`) |
+| Cross-cutting | Dependency management | `uv` (Python), `npm` (Node) | Reproducible installs for both runtimes |
+
+How these fit together end-to-end: a dashlet's Python source is the single artifact consumed by all three tiers — the Canvas extension imports and runs it locally (via Uvicorn) for authoring and interactive use; GitHub Actions imports the exact same module to validate its contract and regenerate tool schemas without ever starting a process; and `gallery.py` imports the exact same FastAPI `app` object a third time to mount it for hosted access. No dashlet file is rewritten or forked between these three uses — see §9 for how the mount-relative fetch convention makes this possible.
+
 ## 2. Component view
 
 ```mermaid
@@ -192,16 +208,19 @@ for dashlet_id, (_display_name, sub_app) in GALLERY_APPS.items():
     app.mount(f"/apps/{dashlet_id}", sub_app)
 ```
 
-Example URLs (once deployed; see `render.yaml`):
+**Deployed and live** at <https://canvas-dashlet-studio-gallery.onrender.com> (Render free tier, via the `render.yaml` Blueprint):
 
 ```text
-https://host.example/apps/treasury-curve/
-https://host.example/apps/portfolio-exposure/
-https://host.example/apps/portfolio-scenario/
-https://host.example/apps/issuer-research/
+https://canvas-dashlet-studio-gallery.onrender.com/apps/hello/
+https://canvas-dashlet-studio-gallery.onrender.com/apps/treasury-curve/
+https://canvas-dashlet-studio-gallery.onrender.com/apps/portfolio-exposure/
+https://canvas-dashlet-studio-gallery.onrender.com/apps/portfolio-scenario/
+https://canvas-dashlet-studio-gallery.onrender.com/apps/issuer-research/
 ```
 
-Each mounted app's HTML uses the mount-relative `fetch("./api/...")` convention from §5, which is what lets the identical dashlet file run unmodified whether served standalone at `/` or mounted here under `/apps/<id>/` — this is verified directly by `tests/test_gallery.py`, not just assumed. That test file also derives its expected app set from `DASHLET_MODULES`, so a dashlet added there without a matching `GALLERY_APPS` entry fails the test instead of silently missing from the gallery.
+Each mounted app's HTML uses the mount-relative `fetch("./api/...")` convention from §5, which is what lets the identical dashlet file run unmodified whether served standalone at `/` or mounted here under `/apps/<id>/` — this is verified directly by `tests/test_gallery.py` locally, and by live `curl` checks against the deployed URL matching local/standalone values exactly (see `docs/evidence/gallery-deployment.md`). `tests/test_gallery.py` also derives its expected app set from `DASHLET_MODULES`, so a dashlet added there without a matching `GALLERY_APPS` entry fails the test instead of silently missing from the gallery.
+
+Render's free tier spins the service down after ~15 minutes idle; the first request after a quiet period cold-starts (10–30s) before responding. Canvas-iframe embedding of the deployed URL specifically has not yet been verified inside an actual Canvas session — see `docs/PROGRESS.md` "Resume here".
 
 ## 10. Security boundary in the MVP
 

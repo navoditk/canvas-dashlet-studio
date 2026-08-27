@@ -12,6 +12,20 @@ A dashlet is a single Python file containing a FastAPI application: its API, emb
 
 This remains an ordinary client-server web architecture — a browser-rendered iframe talking to a FastAPI backend — with one addition: an **agentic integration layer**. The Canvas extension starts the FastAPI process locally, displays it in an iframe, and separately discovers a subset of its OpenAPI operations to register as Copilot agent tools. No new business logic or protocol is introduced by the agent path; it reuses the same HTTP endpoints the iframe already calls.
 
+## 2a. Scope and deliverables
+
+The full original scope is [`docs/PROPOSAL.md`](docs/PROPOSAL.md) §3 ("MVP scope"); this table maps each of its five deliverable areas to what actually exists in this repository today.
+
+| Scope area (PROPOSAL.md §3.x) | Deliverables | Status |
+|---|---|---|
+| 3.1 Core framework | App factory, provenance/error models, required routes, `agent-tool` tagging, contract validator, recorded fixtures | **Done** — `dashlet_framework/`, `tests/test_dashlet_contract.py`, `fixtures/` |
+| 3.2 Canvas and runtime | Canvas extension, local process launcher, health polling, iframe loading, restart/shutdown, OpenAPI discovery, at least one real proxied agent tool | **Done** — `.github/extensions/dashlet-studio/` |
+| 3.3 Reference dashlets | Treasury (manual reference) + at least two agent-generated business dashlets, ideally four | **Done, all four** — Treasury Curve, Portfolio Exposure, Portfolio Scenario Impact, Issuer Research (§4–7 below). Stretch dashlet (Macro Regime Monitor) **not started** — see [`docs/PROGRESS.md`](docs/PROGRESS.md) "Stretch dashlets" |
+| 3.4 Agentic development framework | `AGENTS.md`, Copilot/Claude instruction files, dashlet creation/review workflow, independent review by a different agent than the implementer | **Mostly done** — `AGENTS.md`, `.github/copilot-instructions.md`, `CLAUDE.md`, contract docs all exist. Independent review of the three most recently built dashlets is **still open** (tracked in `docs/PROGRESS.md` Milestone 4 evidence) |
+| 3.5 Publication | Single FastAPI gallery, `/apps/{id}/` mounting, CI validation, PR publication flow, Render deployment, direct URL, optional iframe embedding | **Done** — `gallery.py`, `.github/workflows/ci.yml`, live at <https://canvas-dashlet-studio-gallery.onrender.com> (see `docs/evidence/gallery-deployment.md`). PR-based publication uses standard GitHub flow rather than a Canvas-driven automated flow (see §8/ARCHITECTURE.md §8 for the intended future flow). Canvas-iframe embedding of the deployed URL is **not yet verified** in an actual Canvas session |
+
+See [`docs/PROGRESS.md`](docs/PROGRESS.md) for the live, continuously-updated milestone checklist behind this table.
+
 ## 3. What works today
 
 - Dashlet Studio Canvas extension: select, start, stop, restart, and view diagnostics for any registered dashlet; only one dashlet process runs at a time.
@@ -85,6 +99,8 @@ Normalization is deterministic Python, not LLM-computed: `operating_margin_pct =
 
 ## 8. Architecture at a glance
 
+The system has three tiers, and every dashlet moves through all three: **(1) local authoring** — a Canvas extension spawns a dashlet's FastAPI process locally, displays it in an iframe, and exposes a subset of its endpoints as Copilot agent tools; **(2) GitHub** — the same dashlet source is version-controlled and validated by CI (Ruff, Pytest, contract validation, tool-schema drift check); **(3) Render hosting** — validated dashlets are mounted together in `gallery.py` and deployed, giving each one a stable, directly-browsable, iframe-embeddable URL alongside its local/Canvas life. See `docs/ARCHITECTURE.md` §1 for the full three-tier system context diagram.
+
 ```mermaid
 flowchart TB
     User["User / Copilot Chat"] --> Canvas["Canvas Extension"]
@@ -95,7 +111,7 @@ flowchart TB
     API --> Provider["Fixture / EOD provider"]
 ```
 
-The iframe and the Copilot agent both call the **same** FastAPI business operation — `fetch("./api/treasury/curve?...")` from the embedded JavaScript, and the identical `/api/treasury/curve` path via the Canvas tool proxy for the agent. This avoids duplicated business logic and keeps provenance identical for both consumers. See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the full component and data-flow diagrams.
+The iframe and the Copilot agent both call the **same** FastAPI business operation — `fetch("./api/treasury/curve?...")` from the embedded JavaScript, and the identical `/api/treasury/curve` path via the Canvas tool proxy for the agent. This avoids duplicated business logic and keeps provenance identical for both consumers. See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the full component and data-flow diagrams, including how the same dashlet file also runs unmodified inside the gallery (§9).
 
 ## 9. Technology stack
 
@@ -218,7 +234,7 @@ uv run uvicorn gallery:app --reload
 
 Then open `http://127.0.0.1:8000/` for a landing page linking to `/apps/hello/`, `/apps/treasury-curve/`, `/apps/portfolio-exposure/`, `/apps/portfolio-scenario/` and `/apps/issuer-research/`. Each mounted dashlet is the exact same FastAPI app used standalone — verified directly by `tests/test_gallery.py`, which also fails if a dashlet is ever added to `scripts/generate_tool_schemas.py`'s `DASHLET_MODULES` without a matching `gallery.py` entry, so the gallery can't silently fall behind.
 
-`render.yaml` (repo root) is a turnkey [Render](https://render.com/docs/deploy-fastapi) Blueprint for deploying `gallery.py`. No deployment has actually been run yet — that step requires the repo owner's own Render account.
+**Live deployment:** <https://canvas-dashlet-studio-gallery.onrender.com>, deployed with `render.yaml` (repo root), a turnkey [Render](https://render.com/docs/deploy-fastapi) Blueprint. Every mounted dashlet is healthy and returns business-logic values matching local verification exactly — see [`docs/evidence/gallery-deployment.md`](docs/evidence/gallery-deployment.md) for the full record. Render's free tier spins the service down after ~15 minutes idle, so the first request after a quiet period takes longer (cold start) before responding.
 
 ## 19. Evidence and screenshots
 
@@ -226,7 +242,7 @@ See [`docs/evidence/treasury-reference.md`](docs/evidence/treasury-reference.md)
 
 ![Treasury Curve Monitor in EOD mode](docs/evidence/images/treasury-canvas-eod.png)
 
-A genuine Canvas screenshot (EOD mode) is included above; see [`docs/evidence/treasury-reference.md`](docs/evidence/treasury-reference.md#screenshot) for capture details and provenance. Portfolio Exposure's evidence record is [`docs/evidence/portfolio-exposure-reference.md`](docs/evidence/portfolio-exposure-reference.md) — direct-FastAPI verification, test summaries, and a real browser screenshot with every displayed value cross-checked against the live API are complete; Canvas-specific evidence is explicitly deferred (see `docs/PROGRESS.md` "Resume here"). Portfolio Scenario Impact's evidence record is [`docs/evidence/portfolio-scenario-reference.md`](docs/evidence/portfolio-scenario-reference.md), verified the same way. Issuer Research's evidence record is [`docs/evidence/issuer-research-reference.md`](docs/evidence/issuer-research-reference.md) — direct-FastAPI verification against real recorded data, the full test suite, and a real live-mode call against actual SEC EDGAR (Alphabet Inc., not in the fixture set) are complete; Canvas-specific evidence is deferred for the same stated reason as the other two.
+A genuine Canvas screenshot (EOD mode) is included above; see [`docs/evidence/treasury-reference.md`](docs/evidence/treasury-reference.md#screenshot) for capture details and provenance. Portfolio Exposure's evidence record is [`docs/evidence/portfolio-exposure-reference.md`](docs/evidence/portfolio-exposure-reference.md) — direct-FastAPI verification, test summaries, and a real browser screenshot with every displayed value cross-checked against the live API are complete; Canvas-specific evidence is explicitly deferred (see `docs/PROGRESS.md` "Resume here"). Portfolio Scenario Impact's evidence record is [`docs/evidence/portfolio-scenario-reference.md`](docs/evidence/portfolio-scenario-reference.md), verified the same way. Issuer Research's evidence record is [`docs/evidence/issuer-research-reference.md`](docs/evidence/issuer-research-reference.md) — direct-FastAPI verification against real recorded data, the full test suite, and a real live-mode call against actual SEC EDGAR (Alphabet Inc., not in the fixture set) are complete; Canvas-specific evidence is deferred for the same stated reason as the other two. The gallery's live Render deployment (<https://canvas-dashlet-studio-gallery.onrender.com>) has its own evidence record: [`docs/evidence/gallery-deployment.md`](docs/evidence/gallery-deployment.md) — every mounted dashlet verified healthy with business-logic values cross-checked exactly against local verification; Canvas-iframe-specific verification of the deployed URL remains deferred, same reasoning as above.
 
 ## 20. Repository structure
 
@@ -265,7 +281,7 @@ docs/                              Installation, architecture, roadmap, progress
 - Only one dashlet process runs at a time; there is no concurrent multi-dashlet or cross-dashlet composition view yet.
 - Dashlet registration (`DASHLET_REGISTRY` in `dashlet-registry.mjs`) is manual; there is no auto-discovery yet.
 - No production sandbox, persistent artifact store, or production identity/authorization model.
-- The gallery (`gallery.py`, §18a) exists and is tested, but is not deployed anywhere yet; all verification so far has been against a locally spawned process, not a hosted URL.
+- The gallery (`gallery.py`, §18a) is built, tested and deployed at <https://canvas-dashlet-studio-gallery.onrender.com>; what's still missing is verification inside an actual Canvas session (embedding the deployed URL in an iframe and invoking its agent tools) — see [`docs/evidence/gallery-deployment.md`](docs/evidence/gallery-deployment.md).
 - See [`docs/PROGRESS.md`](docs/PROGRESS.md) "Known limitations" for the complete list.
 
 ## 22. Roadmap
@@ -293,6 +309,7 @@ See [`docs/ROADMAP.md`](docs/ROADMAP.md) for the staged execution plan and [`doc
 | [`docs/evidence/portfolio-exposure-reference.md`](docs/evidence/portfolio-exposure-reference.md) | Portfolio Exposure validation evidence (browser-verified; Canvas-specific sections deferred) |
 | [`docs/evidence/portfolio-scenario-reference.md`](docs/evidence/portfolio-scenario-reference.md) | Portfolio Scenario Impact validation evidence (direct-FastAPI/test verified; Canvas-specific sections deferred) |
 | [`docs/evidence/issuer-research-reference.md`](docs/evidence/issuer-research-reference.md) | Issuer Research validation evidence (real SEC data verified; Canvas-specific sections deferred) |
+| [`docs/evidence/gallery-deployment.md`](docs/evidence/gallery-deployment.md) | Live Render deployment evidence for the gallery (all mounted dashlets verified; Canvas-iframe section deferred) |
 | [`docs/REFERENCES.md`](docs/REFERENCES.md) | Verified external documentation and learning references |
 
 ## 24. References
