@@ -31,24 +31,64 @@ from pathlib import Path
 from urllib.parse import unquote
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-SKIP_DIRS = {".venv", ".git", "__pycache__", "node_modules", "dist", "site"}
+SKIP_DIRS = {
+    ".venv",
+    ".git",
+    "__pycache__",
+    "node_modules",
+    "dist",
+    "site",
+    # Build caches are not documentation. CI runs pytest before this gate, and
+    # pytest always writes .pytest_cache/README.md, so omitting these made the
+    # scanned set depend on whether anything had run first.
+    ".pytest_cache",
+    ".ruff_cache",
+    ".mypy_cache",
+    ".tox",
+    "htmlcov",
+}
 LINK = re.compile(r"\[([^\]]*)\]\(([^)]+)\)")
 FENCE = re.compile(r"^\s*(```|~~~)")
 
 
+HEADING = re.compile(r"^ {0,3}(#{1,6})\s+(.*?)\s*$")
+
+
 def heading_slugs(markdown: str) -> set[str]:
-    """Slugify every real heading the way GitHub does."""
+    """Slugify every real heading the way GitHub does.
+
+    Four details decide whether this matches the real renderer. Fences and the
+    space-to-hyphen rule are described above; two more are structural.
+
+    ATX headings may be indented up to three spaces and may carry a closing
+    run of hashes (`## Section ##`), both legal in CommonMark. Matching on a
+    bare `startswith("#")` misses the first and leaves a trailing hyphen on
+    the second, and a `#` with no following space is not a heading at all --
+    each of which reports a working link as broken, or accepts a broken one.
+
+    Repeated heading text is disambiguated by GitHub with a numeric suffix:
+    three `### Using it` headings yield `using-it`, `using-it-1`, `using-it-2`.
+    Collecting into a set without that collapses them, so a link to the second
+    or third would be reported broken.
+    """
     slugs: set[str] = set()
+    seen: dict[str, int] = {}
     in_fence = False
     for line in markdown.splitlines():
         if FENCE.match(line):
             in_fence = not in_fence
             continue
-        if in_fence or not line.startswith("#"):
+        if in_fence:
             continue
-        heading = line.lstrip("#").strip()
+        match = HEADING.match(line)
+        if not match:
+            continue
+        heading = match.group(2).rstrip("#").strip()
         heading = re.sub(r"\[([^\]]*)\]\([^)]*\)", r"\1", heading).replace("`", "")
-        slugs.add(re.sub(r"[^\w\s-]", "", heading.lower()).replace(" ", "-"))
+        base = re.sub(r"[^\w\s-]", "", heading.lower()).replace(" ", "-")
+        count = seen.get(base, 0)
+        seen[base] = count + 1
+        slugs.add(base if count == 0 else f"{base}-{count}")
     return slugs
 
 
