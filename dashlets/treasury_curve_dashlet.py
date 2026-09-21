@@ -84,11 +84,11 @@ def _required_date_query(description: str):
 
 
 def _required_data_mode_query():
-  return Query(
-    ...,
-    description="Required treasury data mode. Allowed values: fixture, eod.",
-    examples=["fixture"],
-  )
+    return Query(
+        ...,
+        description="Required treasury data mode. Allowed values: fixture, eod.",
+        examples=["fixture"],
+    )
 
 
 _DATA_MODE_QUERY = _required_data_mode_query()
@@ -180,13 +180,13 @@ def _compare_curves_or_422(base_points, compare_points):
 
 
 _PROVIDER_STATUS_MAP: dict[str, int] = {
-    "fixture_not_found":  404,
-    "date_not_in_feed":   404,
-    "invalid_date":       422,
-    "feed_parse_error":   502,
-    "feed_date_error":    502,
-    "feed_http_error":    502,
-    "feed_timeout":       504,
+    "fixture_not_found": 404,
+    "date_not_in_feed": 404,
+    "invalid_date": 422,
+    "feed_parse_error": 502,
+    "feed_date_error": 502,
+    "feed_http_error": 502,
+    "feed_timeout": 504,
     "feed_network_error": 502,
 }
 
@@ -707,7 +707,10 @@ def list_treasury_fixture_dates() -> TreasuryFixtureDatesResponse:
     description="Return deterministic curve points and canonical slopes together for one observation date.",
     response_description="Typed Treasury curve, canonical slopes, and shared provenance.",
     responses={
-        404: {"model": DashletErrorResponse, "description": "Fixture not found for the requested date."},
+        404: {
+            "model": DashletErrorResponse,
+            "description": "Fixture not found for the requested date.",
+        },
         422: {"model": DashletErrorResponse, "description": "Invalid date format."},
     },
     response_model=TreasuryCurveViewResponse,
@@ -734,7 +737,10 @@ def get_treasury_curve_view(
     description="Return a deterministic fixture-backed Treasury curve for a single observation date.",
     response_description="Typed Treasury curve points and provenance.",
     responses={
-        404: {"model": DashletErrorResponse, "description": "Fixture not found for the requested date."},
+        404: {
+            "model": DashletErrorResponse,
+            "description": "Fixture not found for the requested date.",
+        },
         422: {"model": DashletErrorResponse, "description": "Invalid date format."},
     },
     response_model=TreasuryCurveResponse,
@@ -759,7 +765,10 @@ def get_treasury_curve(
     description="Return deterministic canonical slope pairs (2s10s, 3m10y and 5s30s) for one observation date.",
     response_description="Canonical slope metrics with provenance.",
     responses={
-        404: {"model": DashletErrorResponse, "description": "Fixture not found for the requested date."},
+        404: {
+            "model": DashletErrorResponse,
+            "description": "Fixture not found for the requested date.",
+        },
         422: {
             "model": DashletErrorResponse,
             "description": "Invalid date format or a required slope maturity is missing from the fixture.",
@@ -793,7 +802,10 @@ def get_curve_slopes(
     description="Compare two deterministic fixture-backed Treasury curves and return maturity-level basis-point deltas.",
     response_description="Per-maturity curve comparison points with provenance.",
     responses={
-        404: {"model": DashletErrorResponse, "description": "Fixture not found for at least one requested date."},
+        404: {
+            "model": DashletErrorResponse,
+            "description": "Fixture not found for at least one requested date.",
+        },
         422: {
             "model": DashletErrorResponse,
             "description": "Invalid date format or the two curves do not share the same maturities.",

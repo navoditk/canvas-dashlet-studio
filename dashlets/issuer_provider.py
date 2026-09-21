@@ -107,7 +107,9 @@ class PublicIssuerProvider:
             }
         cik = self._ticker_cik_cache.get(ticker.upper())
         if cik is None:
-            raise ProviderError("ticker_not_found", f"No SEC-registered company found for ticker: {ticker}")
+            raise ProviderError(
+                "ticker_not_found", f"No SEC-registered company found for ticker: {ticker}"
+            )
         return cik
 
     def fetch_raw(self, ticker: str) -> tuple[str, dict, dict]:

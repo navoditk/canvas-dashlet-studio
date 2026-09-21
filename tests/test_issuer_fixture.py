@@ -25,22 +25,50 @@ def _usd_entries(values: list[tuple[str, str, float, str, str, int]]) -> list[di
     """values: (start_or_None, end, val, accn, filed, fy) -- start=None for instant facts."""
     entries = []
     for start, end, val, accn, filed, fy in values:
-        entry = {"end": end, "val": val, "accn": accn, "filed": filed, "fy": fy, "fp": "FY", "form": "10-K"}
+        entry = {
+            "end": end,
+            "val": val,
+            "accn": accn,
+            "filed": filed,
+            "fy": fy,
+            "fp": "FY",
+            "form": "10-K",
+        }
         if start:
             entry["start"] = start
         entries.append(entry)
     return entries
 
 
-def _sample_company_facts(*, include_equity: bool = True, use_fallback_revenue: bool = False) -> dict:
-    revenue_key = "Revenues" if use_fallback_revenue else "RevenueFromContractWithCustomerExcludingAssessedTax"
+def _sample_company_facts(
+    *, include_equity: bool = True, use_fallback_revenue: bool = False
+) -> dict:
+    revenue_key = (
+        "Revenues"
+        if use_fallback_revenue
+        else "RevenueFromContractWithCustomerExcludingAssessedTax"
+    )
     gaap: dict = {
         revenue_key: {
             "units": {
                 "USD": _usd_entries(
                     [
-                        ("2022-01-01", "2022-12-31", 1_000_000.0, "0000000000-23-000001", "2023-02-01", 2023),
-                        ("2023-01-01", "2023-12-31", 1_200_000.0, "0000000000-24-000001", "2024-02-01", 2024),
+                        (
+                            "2022-01-01",
+                            "2022-12-31",
+                            1_000_000.0,
+                            "0000000000-23-000001",
+                            "2023-02-01",
+                            2023,
+                        ),
+                        (
+                            "2023-01-01",
+                            "2023-12-31",
+                            1_200_000.0,
+                            "0000000000-24-000001",
+                            "2024-02-01",
+                            2024,
+                        ),
                     ]
                 )
             }
@@ -49,8 +77,22 @@ def _sample_company_facts(*, include_equity: bool = True, use_fallback_revenue: 
             "units": {
                 "USD": _usd_entries(
                     [
-                        ("2022-01-01", "2022-12-31", 200_000.0, "0000000000-23-000001", "2023-02-01", 2023),
-                        ("2023-01-01", "2023-12-31", 300_000.0, "0000000000-24-000001", "2024-02-01", 2024),
+                        (
+                            "2022-01-01",
+                            "2022-12-31",
+                            200_000.0,
+                            "0000000000-23-000001",
+                            "2023-02-01",
+                            2023,
+                        ),
+                        (
+                            "2023-01-01",
+                            "2023-12-31",
+                            300_000.0,
+                            "0000000000-24-000001",
+                            "2024-02-01",
+                            2024,
+                        ),
                     ]
                 )
             }
@@ -59,8 +101,22 @@ def _sample_company_facts(*, include_equity: bool = True, use_fallback_revenue: 
             "units": {
                 "USD": _usd_entries(
                     [
-                        ("2022-01-01", "2022-12-31", 180_000.0, "0000000000-23-000001", "2023-02-01", 2023),
-                        ("2023-01-01", "2023-12-31", 250_000.0, "0000000000-24-000001", "2024-02-01", 2024),
+                        (
+                            "2022-01-01",
+                            "2022-12-31",
+                            180_000.0,
+                            "0000000000-23-000001",
+                            "2023-02-01",
+                            2023,
+                        ),
+                        (
+                            "2023-01-01",
+                            "2023-12-31",
+                            250_000.0,
+                            "0000000000-24-000001",
+                            "2024-02-01",
+                            2024,
+                        ),
                     ]
                 )
             }
@@ -69,8 +125,22 @@ def _sample_company_facts(*, include_equity: bool = True, use_fallback_revenue: 
             "units": {
                 "USD": _usd_entries(
                     [
-                        (None, "2022-12-31", 2_000_000.0, "0000000000-23-000001", "2023-02-01", 2023),
-                        (None, "2023-12-31", 2_400_000.0, "0000000000-24-000001", "2024-02-01", 2024),
+                        (
+                            None,
+                            "2022-12-31",
+                            2_000_000.0,
+                            "0000000000-23-000001",
+                            "2023-02-01",
+                            2023,
+                        ),
+                        (
+                            None,
+                            "2023-12-31",
+                            2_400_000.0,
+                            "0000000000-24-000001",
+                            "2024-02-01",
+                            2024,
+                        ),
                     ]
                 )
             }
@@ -91,8 +161,22 @@ def _sample_company_facts(*, include_equity: bool = True, use_fallback_revenue: 
             "units": {
                 "USD": _usd_entries(
                     [
-                        (None, "2022-12-31", 1_200_000.0, "0000000000-23-000001", "2023-02-01", 2023),
-                        (None, "2023-12-31", 1_500_000.0, "0000000000-24-000001", "2024-02-01", 2024),
+                        (
+                            None,
+                            "2022-12-31",
+                            1_200_000.0,
+                            "0000000000-23-000001",
+                            "2023-02-01",
+                            2023,
+                        ),
+                        (
+                            None,
+                            "2023-12-31",
+                            1_500_000.0,
+                            "0000000000-24-000001",
+                            "2024-02-01",
+                            2024,
+                        ),
                     ]
                 )
             }
@@ -110,7 +194,13 @@ def _sample_submissions() -> dict:
         "filings": {
             "recent": {
                 "form": ["10-K", "4", "10-Q", "8-K", "8-K"],
-                "filingDate": ["2024-02-01", "2024-01-15", "2023-11-01", "2023-10-01", "2023-09-01"],
+                "filingDate": [
+                    "2024-02-01",
+                    "2024-01-15",
+                    "2023-11-01",
+                    "2023-10-01",
+                    "2023-09-01",
+                ],
                 "reportDate": ["2023-12-31", "", "2023-09-30", "", ""],
                 "accessionNumber": [
                     "0000000000-24-000001",
@@ -119,7 +209,13 @@ def _sample_submissions() -> dict:
                     "0000000000-23-000004",
                     "0000000000-23-000003",
                 ],
-                "primaryDocument": ["smpl-10k.htm", "form4.xml", "smpl-10q.htm", "smpl-8k1.htm", "smpl-8k2.htm"],
+                "primaryDocument": [
+                    "smpl-10k.htm",
+                    "form4.xml",
+                    "smpl-10q.htm",
+                    "smpl-8k1.htm",
+                    "smpl-8k2.htm",
+                ],
             }
         },
     }
@@ -137,7 +233,9 @@ def test_extract_annual_periods_maps_all_concepts() -> None:
     assert latest.total_assets.period_start is None  # balance-sheet fact is instant
 
 
-def test_extract_annual_periods_picks_concept_with_most_recent_data_not_first_in_priority_order() -> None:
+def test_extract_annual_periods_picks_concept_with_most_recent_data_not_first_in_priority_order() -> (
+    None
+):
     # Regression test for a real bug found against live NVIDIA data: a
     # company can report revenue under RevenueFromContractWithCustomer...
     # for its older fiscal years, then migrate to the plain Revenues tag
@@ -295,7 +393,9 @@ def test_build_snapshot_from_live_json_fixture_mode() -> None:
 
 def test_build_snapshot_from_live_json_live_mode_has_no_recorded_at() -> None:
     snapshot = build_snapshot_from_live_json(
-        submissions_json=_sample_submissions(), company_facts_json=_sample_company_facts(), data_mode="live"
+        submissions_json=_sample_submissions(),
+        company_facts_json=_sample_company_facts(),
+        data_mode="live",
     )
     assert snapshot.fixture_meta.data_mode == "live"
     assert snapshot.fixture_meta.recorded_at is None

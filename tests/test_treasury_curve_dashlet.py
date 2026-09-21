@@ -151,10 +151,19 @@ def test_openapi_operation_ids_and_agent_tool_tags() -> None:
     )
     assert curve_date_param["required"] is False
 
-    compare_base_param = next(param for param in compare_op["parameters"] if param["name"] == "base_date")
-    compare_date_param = next(param for param in compare_op["parameters"] if param["name"] == "compare_date")
-    assert compare_base_param["description"] == "Required base observation date in YYYY-MM-DD format."
-    assert compare_date_param["description"] == "Required comparison observation date in YYYY-MM-DD format."
+    compare_base_param = next(
+        param for param in compare_op["parameters"] if param["name"] == "base_date"
+    )
+    compare_date_param = next(
+        param for param in compare_op["parameters"] if param["name"] == "compare_date"
+    )
+    assert (
+        compare_base_param["description"] == "Required base observation date in YYYY-MM-DD format."
+    )
+    assert (
+        compare_date_param["description"]
+        == "Required comparison observation date in YYYY-MM-DD format."
+    )
     assert compare_base_param["required"] is True
     assert compare_date_param["required"] is True
 
@@ -236,7 +245,9 @@ def test_curve_endpoint_provenance_includes_timezone_aware_retrieved_at() -> Non
     assert provenance["source_url"] is None
 
 
-def test_slopes_endpoint_missing_required_maturity_returns_controlled_422(monkeypatch, tmp_path) -> None:
+def test_slopes_endpoint_missing_required_maturity_returns_controlled_422(
+    monkeypatch, tmp_path
+) -> None:
     from dashlets import treasury_curve_dashlet
 
     incomplete_fixture = tmp_path / "curve_2030-01-01.json"
@@ -264,7 +275,9 @@ def test_slopes_endpoint_missing_required_maturity_returns_controlled_422(monkey
     assert "Missing maturity required for slope" in detail["message"]
 
 
-def test_compare_endpoint_mismatched_maturities_returns_controlled_422(monkeypatch, tmp_path) -> None:
+def test_compare_endpoint_mismatched_maturities_returns_controlled_422(
+    monkeypatch, tmp_path
+) -> None:
     from dashlets import treasury_curve_dashlet
 
     base_fixture = tmp_path / "curve_2030-02-01.json"
@@ -336,9 +349,9 @@ def test_root_page_uses_mount_relative_api_fetch_paths() -> None:
     html = response.text
 
     assert 'fetch("./api/treasury/fixture-dates")' in html
-    assert 'fetch(`./api/treasury/curve${query}`)' in html
-    assert 'fetch(`./api/treasury/slopes${query}`)' in html
-    assert 'fetch(`./api/treasury/compare${query}`)' in html
+    assert "fetch(`./api/treasury/curve${query}`)" in html
+    assert "fetch(`./api/treasury/slopes${query}`)" in html
+    assert "fetch(`./api/treasury/compare${query}`)" in html
 
 
 def test_root_page_contains_expanded_provenance_contract_tokens() -> None:

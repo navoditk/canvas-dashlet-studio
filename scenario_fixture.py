@@ -57,7 +57,9 @@ def compute_position_impact(position: Position, shock: ScenarioShock) -> Positio
     impact of the equivalent long position.
     """
     rate_impact = -position.duration * position.market_value * (shock.rate_shock_bps / 10_000.0)
-    spread_impact = -position.spread_duration * position.market_value * (shock.spread_shock_bps / 10_000.0)
+    spread_impact = (
+        -position.spread_duration * position.market_value * (shock.spread_shock_bps / 10_000.0)
+    )
     equity_impact = position.beta * position.market_value * (shock.equity_shock_pct / 100.0)
     total_impact = rate_impact + spread_impact + equity_impact
     return PositionImpact(
@@ -71,7 +73,9 @@ def compute_position_impact(position: Position, shock: ScenarioShock) -> Positio
     )
 
 
-def compute_position_impacts(positions: list[Position], shock: ScenarioShock) -> list[PositionImpact]:
+def compute_position_impacts(
+    positions: list[Position], shock: ScenarioShock
+) -> list[PositionImpact]:
     impacts = [compute_position_impact(position, shock) for position in positions]
     return sorted(impacts, key=lambda impact: impact.issuer)
 

@@ -82,13 +82,17 @@ class NormalizedMetrics(BaseModel):
     operating_cash_flow: float | None
 
 
-def compute_operating_margin_pct(revenue: float | None, operating_income: float | None) -> float | None:
+def compute_operating_margin_pct(
+    revenue: float | None, operating_income: float | None
+) -> float | None:
     if revenue is None or operating_income is None or revenue == 0:
         return None
     return operating_income / revenue * 100.0
 
 
-def compute_leverage_ratio(total_liabilities: float | None, stockholders_equity: float | None) -> float | None:
+def compute_leverage_ratio(
+    total_liabilities: float | None, stockholders_equity: float | None
+) -> float | None:
     if total_liabilities is None or stockholders_equity is None or stockholders_equity == 0:
         return None
     return total_liabilities / stockholders_equity
@@ -123,7 +127,9 @@ def _latest_annual_period_end(entries: list[dict]) -> str | None:
     return max(annual_ends, default=None)
 
 
-def _most_recent_concept(gaap_facts: dict, concept_names: list[str]) -> tuple[str | None, list[dict]]:
+def _most_recent_concept(
+    gaap_facts: dict, concept_names: list[str]
+) -> tuple[str | None, list[dict]]:
     """Pick whichever candidate concept's annual (10-K/FY) data covers the
     most recent period end, not simply the first candidate with any data.
 
@@ -163,7 +169,9 @@ def _annual_facts_by_period_end(entries: list[dict]) -> dict[str, dict]:
     return by_end
 
 
-def _fact_or_none(by_end: dict[str, dict], period_end: str, has_start: bool) -> FinancialFact | None:
+def _fact_or_none(
+    by_end: dict[str, dict], period_end: str, has_start: bool
+) -> FinancialFact | None:
     entry = by_end.get(period_end)
     if not entry:
         return None
@@ -256,7 +264,11 @@ def filing_source_url(cik: str, accession_number: str) -> str:
 
 
 def build_snapshot_from_live_json(
-    *, submissions_json: dict, company_facts_json: dict, data_mode: str, recorded_at: date | None = None
+    *,
+    submissions_json: dict,
+    company_facts_json: dict,
+    data_mode: str,
+    recorded_at: date | None = None,
 ) -> IssuerSnapshot:
     """Assemble an IssuerSnapshot from raw SEC API responses. Used by both
     PublicIssuerProvider (data_mode="live", recorded_at=None) and

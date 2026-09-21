@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 """One-shot manual live data check. Not part of the automated test suite."""
+
 from __future__ import annotations
 
 import sys
@@ -33,9 +34,7 @@ def main() -> None:
     print(f"Parsed {len(days)} day(s) from feed.")
 
     try:
-        resp = normalize_to_curve_response(
-            days, OBSERVATION_DATE, source_url, datetime.now(UTC)
-        )
+        resp = normalize_to_curve_response(days, OBSERVATION_DATE, source_url, datetime.now(UTC))
     except ProviderError as exc:
         print(f"NORMALIZE FAILED: [{exc.error_code}] {exc.message}")
         print("(This date may be a weekend or holiday — try the previous business day.)")
@@ -57,7 +56,9 @@ def main() -> None:
     ten_year = next((pt for pt in resp.points if pt.maturity_label == "10Y"), None)
     assert len(resp.points) >= 10, f"Expected >=10 maturities, got {len(resp.points)}"
     assert ten_year is not None, "10Y maturity missing from live feed"
-    assert 3.0 <= ten_year.yield_percent <= 6.0, f"10Y yield {ten_year.yield_percent} out of sanity range"
+    assert 3.0 <= ten_year.yield_percent <= 6.0, (
+        f"10Y yield {ten_year.yield_percent} out of sanity range"
+    )
     assert p.retrieved_at.tzinfo is not None, "retrieved_at must be timezone-aware"
     assert "daily_treasury_yield_curve" in (p.source_url or ""), "Unexpected source URL"
 

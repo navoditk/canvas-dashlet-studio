@@ -12,22 +12,36 @@ from dashlet_framework import Provenance
 # label so that a bad or inconsistent `maturity_years` value in a fixture
 # cannot silently reorder the curve.
 CANONICAL_MATURITY_ORDER: list[str] = [
-    "1M", "1.5M", "2M", "3M", "4M", "6M",
-    "1Y", "2Y", "3Y", "5Y", "7Y", "10Y", "20Y", "30Y",
+    "1M",
+    "1.5M",
+    "2M",
+    "3M",
+    "4M",
+    "6M",
+    "1Y",
+    "2Y",
+    "3Y",
+    "5Y",
+    "7Y",
+    "10Y",
+    "20Y",
+    "30Y",
 ]
 
 
 class FixtureMeta(BaseModel):
-    note:str
-    data_mode:str
+    note: str
+    data_mode: str
+
 
 class CurvePoint(BaseModel):
-    maturity_label:str
-    maturity_years:float
-    yield_percent:float
+    maturity_label: str
+    maturity_years: float
+    yield_percent: float
+
 
 class TreasuryCurveResponse(BaseModel):
-    points : list[CurvePoint]
+    points: list[CurvePoint]
     provenance: Provenance
 
 
@@ -45,14 +59,16 @@ class CurveComparisonPoint(BaseModel):
     compare_yield_percent: float
     delta_bps: float
 
+
 class TreasuryPoint(BaseModel):
-    maturity_label:str
-    maturity_years:float = Field(..., gt=0)
-    yield_percent:float
+    maturity_label: str
+    maturity_years: float = Field(..., gt=0)
+    yield_percent: float
+
 
 class TreasuryCurveFixture(BaseModel):
     observation_date: date
-    curve:list[TreasuryPoint]
+    curve: list[TreasuryPoint]
     fixture_meta: FixtureMeta
 
     @field_validator("curve")
@@ -75,12 +91,14 @@ def _canonical_sort_key(point: TreasuryPoint) -> tuple[int, str]:
     return (index, point.maturity_label)
 
 
-def sort_curve_points(points:list[TreasuryPoint]) -> list[TreasuryPoint]:
+def sort_curve_points(points: list[TreasuryPoint]) -> list[TreasuryPoint]:
     return sorted(points, key=_canonical_sort_key)
+
 
 def is_canonical_curve(points: list[TreasuryPoint]) -> bool:
     keys = [_canonical_sort_key(point) for point in points]
     return keys == sorted(keys)
+
 
 def load_fixture(path: str | Path) -> TreasuryCurveFixture:
     raw_text = Path(path).read_text()
@@ -89,12 +107,14 @@ def load_fixture(path: str | Path) -> TreasuryCurveFixture:
     fixture.curve = sort_curve_points(fixture.curve)
     return fixture
 
+
 def map_point(point: TreasuryPoint) -> CurvePoint:
     return CurvePoint(
         maturity_label=point.maturity_label,
         maturity_years=point.maturity_years,
         yield_percent=point.yield_percent,
     )
+
 
 def to_curve_response(
     fixture: TreasuryCurveFixture,

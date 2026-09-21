@@ -39,7 +39,7 @@ def health() -> dict[str, str]:
 def index() -> str:
     links = "\n".join(
         f'      <li><a href="/apps/{dashlet_id}/">{display_name}</a> &mdash; '
-        f'<code>/apps/{dashlet_id}/</code></li>'
+        f"<code>/apps/{dashlet_id}/</code></li>"
         for dashlet_id, (display_name, _sub_app) in GALLERY_APPS.items()
     )
     return f"""<!doctype html>

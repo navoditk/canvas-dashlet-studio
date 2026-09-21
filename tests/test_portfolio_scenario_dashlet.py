@@ -204,6 +204,6 @@ def test_root_page_contains_expected_controls_and_state_hooks() -> None:
 def test_root_page_uses_mount_relative_api_fetch_paths() -> None:
     html = client.get("/").text
     assert 'fetch("./api/scenario/fixture-dates")' in html
-    assert 'fetch(`./api/scenario/run${query}`)' in html
-    assert 'fetch(`./api/scenario/contributions${query}`)' in html
-    assert 'fetch(`./api/scenario/compare?${params.toString()}`)' in html
+    assert "fetch(`./api/scenario/run${query}`)" in html
+    assert "fetch(`./api/scenario/contributions${query}`)" in html
+    assert "fetch(`./api/scenario/compare?${params.toString()}`)" in html

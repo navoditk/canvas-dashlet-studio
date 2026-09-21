@@ -60,7 +60,9 @@ def test_mounted_dashlet_without_trailing_slash_redirects() -> None:
 
 
 def test_mounted_treasury_curve_data_endpoint_matches_standalone_values() -> None:
-    response = client.get("/apps/treasury-curve/api/treasury/curve", params={"data_mode": "fixture"})
+    response = client.get(
+        "/apps/treasury-curve/api/treasury/curve", params={"data_mode": "fixture"}
+    )
     assert response.status_code == 200
     payload = response.json()
     assert payload["provenance"]["source"] == "synthetic-fixture"
@@ -74,13 +76,17 @@ def test_mounted_portfolio_exposure_data_endpoint_matches_standalone_values() ->
 
 
 def test_mounted_portfolio_scenario_data_endpoint_matches_standalone_values() -> None:
-    response = client.get("/apps/portfolio-scenario/api/scenario/run", params={"equity_shock_pct": 10.0})
+    response = client.get(
+        "/apps/portfolio-scenario/api/scenario/run", params={"equity_shock_pct": 10.0}
+    )
     assert response.status_code == 200
     assert response.json()["totals"]["total_impact"] == 1_154_000.0
 
 
 def test_mounted_issuer_research_data_endpoint_matches_standalone_values() -> None:
-    response = client.get("/apps/issuer-research/api/issuer/facts", params={"ticker": "AAPL", "data_mode": "fixture"})
+    response = client.get(
+        "/apps/issuer-research/api/issuer/facts", params={"ticker": "AAPL", "data_mode": "fixture"}
+    )
     assert response.status_code == 200
     assert response.json()["revenue"]["value"] == 416_161_000_000.0
 

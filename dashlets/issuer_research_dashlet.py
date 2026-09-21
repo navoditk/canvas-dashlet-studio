@@ -111,10 +111,15 @@ def _data_mode_query(description: str = DATA_MODE_DESCRIPTION):
 
 _TICKER_QUERY = _ticker_query()
 _DATA_MODE_QUERY = _data_mode_query()
-_YEARS_QUERY = Query(default=5, ge=1, le=5, description="Number of most recent fiscal years to return (1-5).")
-_LIMIT_QUERY = Query(default=8, ge=1, le=8, description="Number of most recent filings to return (1-8).")
+_YEARS_QUERY = Query(
+    default=5, ge=1, le=5, description="Number of most recent fiscal years to return (1-5)."
+)
+_LIMIT_QUERY = Query(
+    default=8, ge=1, le=8, description="Number of most recent filings to return (1-8)."
+)
 _FORM_TYPE_QUERY = Query(
-    default=None, description="Optional filter to one filing form type, e.g. '10-K'. Omit for all forms."
+    default=None,
+    description="Optional filter to one filing form type, e.g. '10-K'. Omit for all forms.",
 )
 
 
@@ -130,7 +135,9 @@ _PROVIDER_STATUS_MAP: dict[str, int] = {
 
 def _provider_error_to_http(exc: ProviderError) -> HTTPException:
     status_code = _PROVIDER_STATUS_MAP.get(exc.error_code, 502)
-    raise HTTPException(status_code=status_code, detail={"error_code": exc.error_code, "message": exc.message})
+    raise HTTPException(
+        status_code=status_code, detail={"error_code": exc.error_code, "message": exc.message}
+    )
 
 
 def _to_source_fact_out(fact: FinancialFact | None, cik: str) -> SourceFactOut | None:
@@ -488,7 +495,9 @@ def metadata() -> IssuerDashletMetadataResponse:
 )
 def list_available_issuers() -> AvailableIssuersResponse:
     fixture_provider = resolve_provider(IssuerDataMode.FIXTURE, FIXTURE_DIR)
-    return AvailableIssuersResponse(available_fixture_tickers=fixture_provider.list_available_tickers())
+    return AvailableIssuersResponse(
+        available_fixture_tickers=fixture_provider.list_available_tickers()
+    )
 
 
 @app.get(
@@ -504,7 +513,10 @@ def list_available_issuers() -> AvailableIssuersResponse:
     responses={
         404: {"model": DashletErrorResponse, "description": "Ticker not found."},
         422: {"model": DashletErrorResponse, "description": "Invalid data_mode."},
-        502: {"model": DashletErrorResponse, "description": "SEC EDGAR data unavailable or incomplete."},
+        502: {
+            "model": DashletErrorResponse,
+            "description": "SEC EDGAR data unavailable or incomplete.",
+        },
         504: {"model": DashletErrorResponse, "description": "SEC EDGAR request timed out."},
     },
     response_model=CompanyFactsResponse,
@@ -523,7 +535,10 @@ def get_company_facts(
     if not snapshot.periods:
         raise HTTPException(
             status_code=404,
-            detail={"error_code": "no_financial_data", "message": f"No annual financial data for {ticker}"},
+            detail={
+                "error_code": "no_financial_data",
+                "message": f"No annual financial data for {ticker}",
+            },
         )
     latest = snapshot.periods[-1]
     metrics = normalize_period(latest)
@@ -558,8 +573,14 @@ def get_company_facts(
     response_description="Typed multi-year trend points with provenance.",
     responses={
         404: {"model": DashletErrorResponse, "description": "Ticker not found."},
-        422: {"model": DashletErrorResponse, "description": "Invalid data_mode or years out of range."},
-        502: {"model": DashletErrorResponse, "description": "SEC EDGAR data unavailable or incomplete."},
+        422: {
+            "model": DashletErrorResponse,
+            "description": "Invalid data_mode or years out of range.",
+        },
+        502: {
+            "model": DashletErrorResponse,
+            "description": "SEC EDGAR data unavailable or incomplete.",
+        },
         504: {"model": DashletErrorResponse, "description": "SEC EDGAR request timed out."},
     },
     response_model=FinancialTrendsResponse,
@@ -607,8 +628,14 @@ def get_financial_trends(
     response_description="Typed recent filings with source links and provenance.",
     responses={
         404: {"model": DashletErrorResponse, "description": "Ticker not found."},
-        422: {"model": DashletErrorResponse, "description": "Invalid data_mode or limit out of range."},
-        502: {"model": DashletErrorResponse, "description": "SEC EDGAR data unavailable or incomplete."},
+        422: {
+            "model": DashletErrorResponse,
+            "description": "Invalid data_mode or limit out of range.",
+        },
+        502: {
+            "model": DashletErrorResponse,
+            "description": "SEC EDGAR data unavailable or incomplete.",
+        },
         504: {"model": DashletErrorResponse, "description": "SEC EDGAR request timed out."},
     },
     response_model=RecentFilingsResponse,

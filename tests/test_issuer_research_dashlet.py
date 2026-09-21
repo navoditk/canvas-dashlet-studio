@@ -114,8 +114,12 @@ def test_trends_endpoint_years_bound_limits_result() -> None:
 
 
 def test_trends_endpoint_rejects_years_out_of_range() -> None:
-    too_low = client.get("/api/issuer/trends", params={"ticker": "AAPL", "data_mode": "fixture", "years": 0})
-    too_high = client.get("/api/issuer/trends", params={"ticker": "AAPL", "data_mode": "fixture", "years": 6})
+    too_low = client.get(
+        "/api/issuer/trends", params={"ticker": "AAPL", "data_mode": "fixture", "years": 0}
+    )
+    too_high = client.get(
+        "/api/issuer/trends", params={"ticker": "AAPL", "data_mode": "fixture", "years": 6}
+    )
     assert too_low.status_code == 422
     assert too_high.status_code == 422
 
@@ -134,7 +138,8 @@ def test_filings_endpoint_default_limit_is_eight() -> None:
 
 def test_filings_endpoint_form_type_filter() -> None:
     response = client.get(
-        "/api/issuer/filings", params={"ticker": "MSFT", "data_mode": "fixture", "form_type": "10-K"}
+        "/api/issuer/filings",
+        params={"ticker": "MSFT", "data_mode": "fixture", "form_type": "10-K"},
     )
     assert response.status_code == 200
     payload = response.json()
@@ -143,8 +148,12 @@ def test_filings_endpoint_form_type_filter() -> None:
 
 
 def test_filings_endpoint_rejects_limit_out_of_range() -> None:
-    too_low = client.get("/api/issuer/filings", params={"ticker": "AAPL", "data_mode": "fixture", "limit": 0})
-    too_high = client.get("/api/issuer/filings", params={"ticker": "AAPL", "data_mode": "fixture", "limit": 9})
+    too_low = client.get(
+        "/api/issuer/filings", params={"ticker": "AAPL", "data_mode": "fixture", "limit": 0}
+    )
+    too_high = client.get(
+        "/api/issuer/filings", params={"ticker": "AAPL", "data_mode": "fixture", "limit": 9}
+    )
     assert too_low.status_code == 422
     assert too_high.status_code == 422
 
@@ -167,7 +176,15 @@ def test_facts_endpoint_live_mode_routes_through_public_provider() -> None:
         "sic": "7372",
         "sicDescription": "Services-Prepackaged Software",
         "tickers": ["LIVE"],
-        "filings": {"recent": {"form": [], "filingDate": [], "reportDate": [], "accessionNumber": [], "primaryDocument": []}},
+        "filings": {
+            "recent": {
+                "form": [],
+                "filingDate": [],
+                "reportDate": [],
+                "accessionNumber": [],
+                "primaryDocument": [],
+            }
+        },
     }
     company_facts = {
         "cik": 9999999,
@@ -267,6 +284,6 @@ def test_root_page_contains_expected_controls_and_state_hooks() -> None:
 def test_root_page_uses_mount_relative_api_fetch_paths() -> None:
     html = client.get("/").text
     assert 'fetch("./api/issuer/companies")' in html
-    assert 'fetch(`./api/issuer/facts${query}`)' in html
-    assert 'fetch(`./api/issuer/trends${query}`)' in html
-    assert 'fetch(`./api/issuer/filings${query}`)' in html
+    assert "fetch(`./api/issuer/facts${query}`)" in html
+    assert "fetch(`./api/issuer/trends${query}`)" in html
+    assert "fetch(`./api/issuer/filings${query}`)" in html

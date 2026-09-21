@@ -110,7 +110,9 @@ _EQUITY_SHOCK_QUERY_A = _equity_shock_query("Scenario A: " + EQUITY_SHOCK_DESCRI
 _RATE_SHOCK_QUERY_B = _rate_shock_query("Scenario B: " + RATE_SHOCK_DESCRIPTION)
 _SPREAD_SHOCK_QUERY_B = _spread_shock_query("Scenario B: " + SPREAD_SHOCK_DESCRIPTION)
 _EQUITY_SHOCK_QUERY_B = _equity_shock_query("Scenario B: " + EQUITY_SHOCK_DESCRIPTION)
-_TOP_N_QUERY = Query(default=5, ge=1, le=20, description="Number of top position impacts to return (1-20).")
+_TOP_N_QUERY = Query(
+    default=5, ge=1, le=20, description="Number of top position impacts to return (1-20)."
+)
 
 
 def _latest_available_date_str() -> str:
@@ -118,7 +120,10 @@ def _latest_available_date_str() -> str:
     if not available:
         raise HTTPException(
             status_code=404,
-            detail={"error_code": "no_fixtures_available", "message": "No portfolio fixtures are available."},
+            detail={
+                "error_code": "no_fixtures_available",
+                "message": "No portfolio fixtures are available.",
+            },
         )
     return max(available)
 
@@ -137,7 +142,9 @@ _PROVIDER_STATUS_MAP: dict[str, int] = {
 
 def _provider_error_to_http(exc: ProviderError) -> HTTPException:
     status_code = _PROVIDER_STATUS_MAP.get(exc.error_code, 502)
-    raise HTTPException(status_code=status_code, detail={"error_code": exc.error_code, "message": exc.message})
+    raise HTTPException(
+        status_code=status_code, detail={"error_code": exc.error_code, "message": exc.message}
+    )
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -581,8 +588,14 @@ def list_scenario_fixture_dates() -> ScenarioFixtureDatesResponse:
     ),
     response_description="Typed scenario totals, position impacts, sector contributions and provenance.",
     responses={
-        404: {"model": DashletErrorResponse, "description": "Fixture not found for the requested date."},
-        422: {"model": DashletErrorResponse, "description": "A shock parameter is outside its supported bound."},
+        404: {
+            "model": DashletErrorResponse,
+            "description": "Fixture not found for the requested date.",
+        },
+        422: {
+            "model": DashletErrorResponse,
+            "description": "A shock parameter is outside its supported bound.",
+        },
         502: {"model": DashletErrorResponse, "description": "Portfolio fixture is invalid."},
     },
     response_model=ScenarioRunResponse,
@@ -595,7 +608,9 @@ def run_portfolio_scenario(
 ) -> ScenarioRunResponse:
     resolved_date = _resolve_observation_date_str(date)
     shock = ScenarioShock(
-        rate_shock_bps=rate_shock_bps, spread_shock_bps=spread_shock_bps, equity_shock_pct=equity_shock_pct
+        rate_shock_bps=rate_shock_bps,
+        spread_shock_bps=spread_shock_bps,
+        equity_shock_pct=equity_shock_pct,
     )
     try:
         result = _provider.run_scenario(resolved_date, shock)
@@ -624,8 +639,14 @@ def run_portfolio_scenario(
     ),
     response_description="Ranked position impacts, sector contributions and provenance.",
     responses={
-        404: {"model": DashletErrorResponse, "description": "Fixture not found for the requested date."},
-        422: {"model": DashletErrorResponse, "description": "A shock or top_n parameter is out of range."},
+        404: {
+            "model": DashletErrorResponse,
+            "description": "Fixture not found for the requested date.",
+        },
+        422: {
+            "model": DashletErrorResponse,
+            "description": "A shock or top_n parameter is out of range.",
+        },
         502: {"model": DashletErrorResponse, "description": "Portfolio fixture is invalid."},
     },
     response_model=ScenarioContributionsResponse,
@@ -639,16 +660,18 @@ def get_scenario_contributions(
 ) -> ScenarioContributionsResponse:
     resolved_date = _resolve_observation_date_str(date)
     shock = ScenarioShock(
-        rate_shock_bps=rate_shock_bps, spread_shock_bps=spread_shock_bps, equity_shock_pct=equity_shock_pct
+        rate_shock_bps=rate_shock_bps,
+        spread_shock_bps=spread_shock_bps,
+        equity_shock_pct=equity_shock_pct,
     )
     try:
         result = _provider.run_scenario(resolved_date, shock)
     except ProviderError as exc:
         raise _provider_error_to_http(exc)
 
-    top_positions = sorted(result.position_impacts, key=lambda impact: abs(impact.total_impact), reverse=True)[
-        :top_n
-    ]
+    top_positions = sorted(
+        result.position_impacts, key=lambda impact: abs(impact.total_impact), reverse=True
+    )[:top_n]
 
     return ScenarioContributionsResponse(
         observation_date=result.provenance.observation_date,
@@ -672,8 +695,14 @@ def get_scenario_contributions(
     ),
     response_description="Both scenarios' totals, per-sector impact deltas and provenance.",
     responses={
-        404: {"model": DashletErrorResponse, "description": "Fixture not found for the requested date."},
-        422: {"model": DashletErrorResponse, "description": "A shock parameter is outside its supported bound."},
+        404: {
+            "model": DashletErrorResponse,
+            "description": "Fixture not found for the requested date.",
+        },
+        422: {
+            "model": DashletErrorResponse,
+            "description": "A shock parameter is outside its supported bound.",
+        },
         502: {"model": DashletErrorResponse, "description": "Portfolio fixture is invalid."},
     },
     response_model=ScenarioComparisonResponse,
@@ -688,32 +717,48 @@ def compare_scenario_impacts(
     equity_pct_b: float = _EQUITY_SHOCK_QUERY_B,
 ) -> ScenarioComparisonResponse:
     resolved_date = _resolve_observation_date_str(date)
-    shock_a = ScenarioShock(rate_shock_bps=rate_bps_a, spread_shock_bps=spread_bps_a, equity_shock_pct=equity_pct_a)
-    shock_b = ScenarioShock(rate_shock_bps=rate_bps_b, spread_shock_bps=spread_bps_b, equity_shock_pct=equity_pct_b)
+    shock_a = ScenarioShock(
+        rate_shock_bps=rate_bps_a, spread_shock_bps=spread_bps_a, equity_shock_pct=equity_pct_a
+    )
+    shock_b = ScenarioShock(
+        rate_shock_bps=rate_bps_b, spread_shock_bps=spread_bps_b, equity_shock_pct=equity_pct_b
+    )
     try:
         result_a = _provider.run_scenario(resolved_date, shock_a)
         result_b = _provider.run_scenario(resolved_date, shock_b)
     except ProviderError as exc:
         raise _provider_error_to_http(exc)
 
-    sectors_a = {contribution.sector: contribution for contribution in result_a.sector_contributions}
-    sectors_b = {contribution.sector: contribution for contribution in result_b.sector_contributions}
+    sectors_a = {
+        contribution.sector: contribution for contribution in result_a.sector_contributions
+    }
+    sectors_b = {
+        contribution.sector: contribution for contribution in result_b.sector_contributions
+    }
     all_sectors = sorted(set(sectors_a) | set(sectors_b))
 
     deltas = []
     for sector in all_sectors:
         impact_a = sectors_a[sector].total_impact if sector in sectors_a else 0.0
         impact_b = sectors_b[sector].total_impact if sector in sectors_b else 0.0
-        deltas.append(SectorImpactDelta(sector=sector, impact_a=impact_a, impact_b=impact_b, delta=impact_b - impact_a))
+        deltas.append(
+            SectorImpactDelta(
+                sector=sector, impact_a=impact_a, impact_b=impact_b, delta=impact_b - impact_a
+            )
+        )
 
     return ScenarioComparisonResponse(
         observation_date=result_a.provenance.observation_date,
         scenario_a=ScenarioLegTotals(
-            rate_shock_bps=rate_bps_a, spread_shock_bps=spread_bps_a, equity_shock_pct=equity_pct_a,
+            rate_shock_bps=rate_bps_a,
+            spread_shock_bps=spread_bps_a,
+            equity_shock_pct=equity_pct_a,
             totals=result_a.totals,
         ),
         scenario_b=ScenarioLegTotals(
-            rate_shock_bps=rate_bps_b, spread_shock_bps=spread_bps_b, equity_shock_pct=equity_pct_b,
+            rate_shock_bps=rate_bps_b,
+            spread_shock_bps=spread_bps_b,
+            equity_shock_pct=equity_pct_b,
             totals=result_b.totals,
         ),
         sector_deltas=deltas,

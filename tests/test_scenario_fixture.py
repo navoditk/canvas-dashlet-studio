@@ -47,14 +47,18 @@ def test_short_rate_duration_position_gains_when_rates_rise() -> None:
     # The exact 2Y short example from the FICC walkthrough: -$8M market
     # value, duration 1.9, rates +25bp -> +$38,000 (a short position
     # benefits when rates rise -- no special-casing needed for the sign).
-    position = Position(issuer="2Y Note (short)", sector="Rates", market_value=-8_000_000.0, duration=1.9)
+    position = Position(
+        issuer="2Y Note (short)", sector="Rates", market_value=-8_000_000.0, duration=1.9
+    )
     impact = compute_position_impact(position, ScenarioShock(rate_shock_bps=25.0))
     assert impact.rate_impact == pytest.approx(38_000.0)
 
 
 def test_combined_10y_long_2y_short_matches_net_dv01_walkthrough() -> None:
     long_10y = Position(issuer="10Y Note", sector="Rates", market_value=10_000_000.0, duration=8.5)
-    short_2y = Position(issuer="2Y Note (short)", sector="Rates", market_value=-8_000_000.0, duration=1.9)
+    short_2y = Position(
+        issuer="2Y Note (short)", sector="Rates", market_value=-8_000_000.0, duration=1.9
+    )
     shock = ScenarioShock(rate_shock_bps=25.0)
     impacts = compute_position_impacts([long_10y, short_2y], shock)
     total_impact = sum(impact.total_impact for impact in impacts)
@@ -64,7 +68,9 @@ def test_combined_10y_long_2y_short_matches_net_dv01_walkthrough() -> None:
 
 
 def test_spread_duration_position_loses_value_when_spreads_widen() -> None:
-    position = Position(issuer="Corp Bond", sector="Credit", market_value=5_000_000.0, spread_duration=4.0)
+    position = Position(
+        issuer="Corp Bond", sector="Credit", market_value=5_000_000.0, spread_duration=4.0
+    )
     impact = compute_position_impact(position, ScenarioShock(spread_shock_bps=50.0))
     # -4.0 * $5M * (50/10000) = -$100,000
     assert impact.spread_impact == pytest.approx(-100_000.0)
@@ -72,8 +78,12 @@ def test_spread_duration_position_loses_value_when_spreads_widen() -> None:
 
 def test_combined_shock_sums_all_three_factors() -> None:
     position = Position(
-        issuer="Mixed", sector="Multi-Asset", market_value=1_000_000.0,
-        duration=5.0, spread_duration=2.0, beta=0.5,
+        issuer="Mixed",
+        sector="Multi-Asset",
+        market_value=1_000_000.0,
+        duration=5.0,
+        spread_duration=2.0,
+        beta=0.5,
     )
     shock = ScenarioShock(rate_shock_bps=10.0, spread_shock_bps=20.0, equity_shock_pct=5.0)
     impact = compute_position_impact(position, shock)
@@ -128,7 +138,9 @@ def test_compute_sector_contributions_aggregates_by_sector() -> None:
     by_sector = {c.sector: c for c in contributions}
     assert by_sector["Technology"].total_impact == pytest.approx(150_000.0)
     assert by_sector["Energy"].total_impact == pytest.approx(20_000.0)
-    assert by_sector["Technology"].impact_pct_of_total == pytest.approx(150_000.0 / 170_000.0 * 100.0)
+    assert by_sector["Technology"].impact_pct_of_total == pytest.approx(
+        150_000.0 / 170_000.0 * 100.0
+    )
 
 
 def test_compute_sector_contributions_zero_total_impact_guard() -> None:

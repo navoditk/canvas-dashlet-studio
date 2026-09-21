@@ -6,6 +6,7 @@ scripts.generate_tool_schemas.DASHLET_MODULES makes it covered by every
 check in this file automatically -- see docs/DASHLET_CONTRACT.md and
 AGENTS.md for the contract these checks enforce.
 """
+
 import sys
 from pathlib import Path
 
@@ -82,7 +83,12 @@ def test_every_agent_tool_operation_has_a_unique_id_and_declared_response_model(
             seen_operation_ids[operation_id] = module_target
 
             responses = operation.get("responses", {})
-            schema = responses.get("200", {}).get("content", {}).get("application/json", {}).get("schema", {})
+            schema = (
+                responses.get("200", {})
+                .get("content", {})
+                .get("application/json", {})
+                .get("schema", {})
+            )
             has_response_model = "$ref" in schema or "properties" in schema
             assert has_response_model, (
                 f"{module_target} {method.upper()} {path} ({operation_id}) is tagged "

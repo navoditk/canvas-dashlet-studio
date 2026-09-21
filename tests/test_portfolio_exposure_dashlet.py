@@ -93,7 +93,9 @@ def test_concentration_endpoint_default_top_n_is_five() -> None:
 
 def test_concentration_endpoint_rejects_top_n_out_of_range() -> None:
     too_low = client.get("/api/portfolio/concentration", params={"date": "2026-08-19", "top_n": 0})
-    too_high = client.get("/api/portfolio/concentration", params={"date": "2026-08-19", "top_n": 21})
+    too_high = client.get(
+        "/api/portfolio/concentration", params={"date": "2026-08-19", "top_n": 21}
+    )
     assert too_low.status_code == 422
     assert too_high.status_code == 422
 
@@ -184,6 +186,6 @@ def test_root_page_contains_expected_controls_and_state_hooks() -> None:
 def test_root_page_uses_mount_relative_api_fetch_paths() -> None:
     html = client.get("/").text
     assert 'fetch("./api/portfolio/fixture-dates")' in html
-    assert 'fetch(`./api/portfolio/exposures${query}`)' in html
-    assert 'fetch(`./api/portfolio/concentration${query}`)' in html
-    assert 'fetch(`./api/portfolio/compare?${params.toString()}`)' in html
+    assert "fetch(`./api/portfolio/exposures${query}`)" in html
+    assert "fetch(`./api/portfolio/concentration${query}`)" in html
+    assert "fetch(`./api/portfolio/compare?${params.toString()}`)" in html

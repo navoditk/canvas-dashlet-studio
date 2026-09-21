@@ -49,7 +49,10 @@ class FixturePortfolioProvider:
         return self._fixture_dir / f"positions_{observation_date}.json"
 
     def list_available_dates(self) -> list[str]:
-        dates = {path.stem.removeprefix("positions_") for path in self._fixture_dir.glob("positions_*.json")}
+        dates = {
+            path.stem.removeprefix("positions_")
+            for path in self._fixture_dir.glob("positions_*.json")
+        }
         return sorted(dates)
 
     def get_exposures(self, observation_date: str) -> PortfolioExposureResult:
@@ -65,8 +68,12 @@ class FixturePortfolioProvider:
             raise ProviderError("invalid_fixture", f"Portfolio fixture is invalid: {exc}") from exc
 
         totals = compute_totals(snapshot.positions)
-        sector_exposures = compute_sector_exposures(snapshot.positions, net_denominator=totals.net_market_value)
-        issuer_exposures = compute_issuer_exposures(snapshot.positions, net_denominator=totals.net_market_value)
+        sector_exposures = compute_sector_exposures(
+            snapshot.positions, net_denominator=totals.net_market_value
+        )
+        issuer_exposures = compute_issuer_exposures(
+            snapshot.positions, net_denominator=totals.net_market_value
+        )
 
         available = self.list_available_dates()
         latest = max(available) if available else observation_date

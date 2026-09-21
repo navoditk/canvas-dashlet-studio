@@ -25,11 +25,24 @@ jobs:
       - name: Ruff check
         run: uv run ruff check .
 
+      # Formatting had no gate, so 29 files had drifted with nothing to catch
+      # it. Scoped to Python rather than the whole tree on purpose: ruff also
+      # formats Python inside markdown fences, and docs/DASHLET_CONTRACT.md
+      # illustrates a route decorator with the fragment
+      # `responses={...},` -- which ruff parses as a statement and rewrites
+      # into `responses = (...)`, a tuple assignment that is valid Python and
+      # wrong documentation. Teaching examples are authored, not generated.
+      - name: Ruff format
+        run: uv run ruff format --check . --exclude "*.md"
+
       - name: Pytest
         run: uv run pytest
 
       - name: Verify generated tool schemas are up to date
         run: uv run python scripts/generate_tool_schemas.py --check
+
+      - name: Documentation links and anchors
+        run: uv run python scripts/check_doc_links.py
 
   extension:
     name: Canvas extension (npm test)

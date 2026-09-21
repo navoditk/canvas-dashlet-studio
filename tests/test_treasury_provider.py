@@ -123,7 +123,9 @@ def test_fetch_treasury_feed_raises_on_http_error() -> None:
 
 def test_fetch_treasury_feed_raises_on_timeout() -> None:
     with patch("dashlets.treasury_provider.httpx.Client") as MockClient:
-        MockClient.return_value.__enter__.return_value.get.side_effect = httpx.TimeoutException("timed out")
+        MockClient.return_value.__enter__.return_value.get.side_effect = httpx.TimeoutException(
+            "timed out"
+        )
         with pytest.raises(ProviderError) as exc_info:
             fetch_treasury_feed("2026-08-19")
     assert exc_info.value.error_code == "feed_timeout"

@@ -44,9 +44,13 @@ class ScenarioImpactProvider:
     def run_scenario(self, observation_date: str, shock: ScenarioShock) -> ScenarioImpactResult:
         exposures = self._portfolio_provider.get_exposures(observation_date)
         position_impacts = compute_position_impacts(exposures.positions, shock)
-        totals = compute_scenario_totals(position_impacts, net_market_value=exposures.totals.net_market_value)
+        totals = compute_scenario_totals(
+            position_impacts, net_market_value=exposures.totals.net_market_value
+        )
         total_impact = totals.total_impact
-        sector_contributions = compute_sector_contributions(position_impacts, total_impact=total_impact)
+        sector_contributions = compute_sector_contributions(
+            position_impacts, total_impact=total_impact
+        )
         return ScenarioImpactResult(
             position_impacts=position_impacts,
             totals=totals,

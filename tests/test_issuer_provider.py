@@ -71,7 +71,9 @@ def _write_fixture(fixture_dir: Path, ticker: str) -> None:
         data_mode="fixture",
         recorded_at=date(2026, 8, 26),
     )
-    (fixture_dir / f"{ticker}.json").write_text(json.dumps(snapshot.model_dump(mode="json"), indent=2))
+    (fixture_dir / f"{ticker}.json").write_text(
+        json.dumps(snapshot.model_dump(mode="json"), indent=2)
+    )
 
 
 # --- FixtureIssuerProvider -------------------------------------------------
@@ -127,7 +129,9 @@ def test_public_provider_resolves_ticker_and_fetches_snapshot() -> None:
         _json_response(_sample_submissions()),
         _json_response(_sample_company_facts()),
     ]
-    with patch("dashlets.issuer_provider.httpx.Client", return_value=_mock_client_returning(responses)):
+    with patch(
+        "dashlets.issuer_provider.httpx.Client", return_value=_mock_client_returning(responses)
+    ):
         provider = PublicIssuerProvider()
         result = provider.get_snapshot("SMPL")
 
@@ -135,7 +139,9 @@ def test_public_provider_resolves_ticker_and_fetches_snapshot() -> None:
     assert result.provenance.source == "sec-edgar-live"
     assert result.provenance.data_mode == "live"
     assert result.provenance.is_stale is False
-    assert result.provenance.source_url is not None and result.provenance.source_url.startswith("https://")
+    assert result.provenance.source_url is not None and result.provenance.source_url.startswith(
+        "https://"
+    )
 
 
 def test_public_provider_caches_ticker_map_across_calls() -> None:
@@ -148,7 +154,9 @@ def test_public_provider_caches_ticker_map_across_calls() -> None:
         _json_response(_sample_submissions()),
         _json_response(_sample_company_facts()),
     ]
-    with patch("dashlets.issuer_provider.httpx.Client", return_value=_mock_client_returning(responses)) as mock_ctor:
+    with patch(
+        "dashlets.issuer_provider.httpx.Client", return_value=_mock_client_returning(responses)
+    ) as mock_ctor:
         provider = PublicIssuerProvider()
         provider.get_snapshot("SMPL")
         provider.get_snapshot("SMPL")
@@ -160,7 +168,8 @@ def test_public_provider_caches_ticker_map_across_calls() -> None:
 def test_public_provider_unknown_ticker_raises() -> None:
     ticker_map = {"0": {"cik_str": 1234567, "ticker": "SMPL", "title": "Sample Corp"}}
     with patch(
-        "dashlets.issuer_provider.httpx.Client", return_value=_mock_client_returning([_json_response(ticker_map)])
+        "dashlets.issuer_provider.httpx.Client",
+        return_value=_mock_client_returning([_json_response(ticker_map)]),
     ):
         provider = PublicIssuerProvider()
         with pytest.raises(ProviderError) as exc_info:
@@ -190,7 +199,9 @@ def test_public_provider_raises_on_network_error() -> None:
 
 def test_public_provider_raises_on_non_200_status() -> None:
     responses = [_json_response({}, status_code=503)]
-    with patch("dashlets.issuer_provider.httpx.Client", return_value=_mock_client_returning(responses)):
+    with patch(
+        "dashlets.issuer_provider.httpx.Client", return_value=_mock_client_returning(responses)
+    ):
         provider = PublicIssuerProvider()
         with pytest.raises(ProviderError) as exc_info:
             provider.get_snapshot("SMPL")
@@ -205,7 +216,9 @@ def test_public_provider_raises_missing_financial_data_when_no_periods() -> None
         _json_response(_sample_submissions()),
         _json_response(empty_facts),
     ]
-    with patch("dashlets.issuer_provider.httpx.Client", return_value=_mock_client_returning(responses)):
+    with patch(
+        "dashlets.issuer_provider.httpx.Client", return_value=_mock_client_returning(responses)
+    ):
         provider = PublicIssuerProvider()
         with pytest.raises(ProviderError) as exc_info:
             provider.get_snapshot("SMPL")

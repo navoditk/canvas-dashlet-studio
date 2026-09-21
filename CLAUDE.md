@@ -1,6 +1,12 @@
+@AGENTS.md
+
 # Claude instructions for Canvas Dashlet Studio
 
-Read [`AGENTS.md`](AGENTS.md) first — it is canonical for architecture, the dashlet contract, framework rules, agent-tool rules, and the must/must-not list. This file only adds Claude-specific notes; it does not repeat AGENTS.md.
+`AGENTS.md` is canonical for architecture, the dashlet contract, framework rules, agent-tool rules, and the must/must-not list. The `@AGENTS.md` import above loads it; this file only adds Claude-specific notes and never repeats it.
+
+The import matters more than it looks. Claude Code reads `AGENTS.md` directly **only when no `CLAUDE.md` exists** — the moment this file is present, it reads `CLAUDE.md` alone. So a prose "read AGENTS.md first" left those canonical rules unloaded and relied on the agent choosing to act on the instruction. An import loads them; a sentence asks nicely.
+
+An import rather than a symlink is deliberate: the Edit and Write tools refuse to write through a symlink, and Git checks a committed symlink out as a plain text file on Windows clones unless `core.symlinks` is set.
 
 ## Claude Code specifics
 
