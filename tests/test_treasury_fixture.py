@@ -79,7 +79,9 @@ def test_to_curve_response_provenance_is_timezone_aware_and_not_stale_by_default
     fixture = load_fixture("fixtures/treasury/curve_2026-08-19.json")
     response = to_curve_response(fixture)
     assert response.provenance.retrieved_at.tzinfo is not None
-    assert response.provenance.retrieved_at.tzinfo.utcoffset(response.provenance.retrieved_at) == UTC.utcoffset(None)
+    assert response.provenance.retrieved_at.tzinfo.utcoffset(
+        response.provenance.retrieved_at
+    ) == UTC.utcoffset(None)
     assert response.provenance.is_stale is False
     assert response.provenance.source_url is None
 

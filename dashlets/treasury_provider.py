@@ -34,18 +34,18 @@ FEED_NS = {
 # Ordered mapping: XML field name → canonical maturity label and maturity_years.
 # Entries not needed for existing slopes are included for completeness.
 MATURITY_MAP: list[tuple[str, str, float]] = [
-    ("BC_1MONTH",  "1M",  1 / 12),
-    ("BC_2MONTH",  "2M",  2 / 12),
-    ("BC_3MONTH",  "3M",  0.25),
-    ("BC_6MONTH",  "6M",  0.5),
-    ("BC_1YEAR",   "1Y",  1.0),
-    ("BC_2YEAR",   "2Y",  2.0),
-    ("BC_3YEAR",   "3Y",  3.0),
-    ("BC_5YEAR",   "5Y",  5.0),
-    ("BC_7YEAR",   "7Y",  7.0),
-    ("BC_10YEAR",  "10Y", 10.0),
-    ("BC_20YEAR",  "20Y", 20.0),
-    ("BC_30YEAR",  "30Y", 30.0),
+    ("BC_1MONTH", "1M", 1 / 12),
+    ("BC_2MONTH", "2M", 2 / 12),
+    ("BC_3MONTH", "3M", 0.25),
+    ("BC_6MONTH", "6M", 0.5),
+    ("BC_1YEAR", "1Y", 1.0),
+    ("BC_2YEAR", "2Y", 2.0),
+    ("BC_3YEAR", "3Y", 3.0),
+    ("BC_5YEAR", "5Y", 5.0),
+    ("BC_7YEAR", "7Y", 7.0),
+    ("BC_10YEAR", "10Y", 10.0),
+    ("BC_20YEAR", "20Y", 20.0),
+    ("BC_30YEAR", "30Y", 30.0),
 ]
 
 
@@ -88,7 +88,9 @@ class FixtureTreasuryProvider:
                 f"No fixture found for date: {observation_date}",
             )
         fixture = load_fixture(fixture_path)
-        available = sorted(p.stem.removeprefix("curve_") for p in self._fixture_dir.glob("curve_*.json"))
+        available = sorted(
+            p.stem.removeprefix("curve_") for p in self._fixture_dir.glob("curve_*.json")
+        )
         latest = available[-1] if available else observation_date
         is_stale = observation_date != latest
         return to_curve_response(fixture, is_stale=is_stale)
@@ -121,7 +123,9 @@ def parse_treasury_feed(xml_text: str, source_url: str) -> list[ParsedCurveDay]:
         try:
             observation_date = date.fromisoformat(raw_date[:10])
         except ValueError as exc:
-            raise ProviderError("feed_date_error", f"Unparseable date in feed: {raw_date!r}") from exc
+            raise ProviderError(
+                "feed_date_error", f"Unparseable date in feed: {raw_date!r}"
+            ) from exc
 
         points: list[tuple[str, str, float, float]] = []
 

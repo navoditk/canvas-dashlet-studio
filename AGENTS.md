@@ -25,13 +25,17 @@ The one contract that matters more than any other: **one typed business operatio
 ```bash
 uv sync                                    # install Python dependencies
 uv run ruff check .                        # lint (must be clean)
+uv run ruff format --check . --exclude "*.md"  # formatting (markdown excluded on purpose -- see below)
 uv run pytest                              # Python contract/provider/dashlet tests
 uv run python scripts/generate_tool_schemas.py         # regenerate Canvas tool schemas from OpenAPI
 uv run python scripts/generate_tool_schemas.py --check  # verify the generated file is not stale (what CI runs)
+uv run python scripts/check_doc_links.py               # every relative doc link and heading anchor resolves
 cd .github/extensions/dashlet-studio && npm test        # Canvas extension tests
 ```
 
-All four (`ruff`, `pytest`, the schema `--check`, `npm test`) run in `.github/workflows/ci.yml` on every push/PR. Run them locally before considering any change finished.
+All six (`ruff check`, `ruff format --check`, `pytest`, the schema `--check`, the doc-link check, `npm test`) run in `.github/workflows/ci.yml` on every push/PR. Run them locally before considering any change finished.
+
+The format check deliberately excludes markdown. Ruff formats Python inside fenced code blocks too, and `docs/DASHLET_CONTRACT.md` illustrates a route decorator with the fragment `responses={...},` -- which Ruff parses as a statement and rewrites into `responses = (...)`, a tuple assignment that is valid Python and wrong documentation. Teaching examples are authored, not generated.
 
 ## 4. The dashlet contract, summarized
 
@@ -73,7 +77,7 @@ Agents must:
 - Include loading, empty and error UI states.
 - Include provenance on every data response.
 - Tag agent-tool endpoints explicitly and register them in the Canvas allowlist.
-- Run `ruff`, `pytest`, the schema `--check`, and `npm test` before calling a change done.
+- Run all six commands in §3 before calling a change done, not a subset.
 - Explain any new dependency before adding it.
 
 Agents must not:
@@ -95,6 +99,6 @@ Per `docs/AGENTIC_DEVELOPMENT.md` §10: a generated dashlet should be reviewed b
 - Fixture-backed deterministic tests exist (pytest) covering the required routes, at least one agent-tool operation, and provenance.
 - At least one UI data operation is also exposed as an approved agent tool (the dual-use contract, §1).
 - Registered in `dashlet-registry.mjs`'s `DASHLET_REGISTRY`; tool schemas regenerated and committed.
-- `ruff`, `pytest`, the schema `--check`, and `npm test` all pass.
+- All six commands in §3 pass.
 - `README.md` and `docs/PROGRESS.md` updated to reflect the new dashlet.
 - Independent review completed (§8).

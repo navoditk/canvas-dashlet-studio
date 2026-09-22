@@ -83,7 +83,10 @@ def _latest_available_date_str() -> str:
     if not available:
         raise HTTPException(
             status_code=404,
-            detail={"error_code": "no_fixtures_available", "message": "No portfolio fixtures are available."},
+            detail={
+                "error_code": "no_fixtures_available",
+                "message": "No portfolio fixtures are available.",
+            },
         )
     return max(available)
 
@@ -102,7 +105,9 @@ _PROVIDER_STATUS_MAP: dict[str, int] = {
 
 def _provider_error_to_http(exc: ProviderError) -> HTTPException:
     status_code = _PROVIDER_STATUS_MAP.get(exc.error_code, 502)
-    raise HTTPException(status_code=status_code, detail={"error_code": exc.error_code, "message": exc.message})
+    raise HTTPException(
+        status_code=status_code, detail={"error_code": exc.error_code, "message": exc.message}
+    )
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -509,7 +514,10 @@ def list_portfolio_fixture_dates() -> PortfolioFixtureDatesResponse:
     description="Return deterministic long/short/net portfolio exposure by sector and by issuer for one observation date.",
     response_description="Typed portfolio totals, sector exposures, issuer exposures and provenance.",
     responses={
-        404: {"model": DashletErrorResponse, "description": "Fixture not found for the requested date."},
+        404: {
+            "model": DashletErrorResponse,
+            "description": "Fixture not found for the requested date.",
+        },
         502: {"model": DashletErrorResponse, "description": "Portfolio fixture is invalid."},
     },
     response_model=PortfolioExposuresResponse,
@@ -539,15 +547,23 @@ def get_portfolio_exposures(
     description="Return the top issuer and sector concentrations by absolute net exposure weight for one observation date.",
     response_description="Ranked issuer and sector concentrations with provenance.",
     responses={
-        404: {"model": DashletErrorResponse, "description": "Fixture not found for the requested date."},
-        422: {"model": DashletErrorResponse, "description": "top_n out of the supported 1-20 range."},
+        404: {
+            "model": DashletErrorResponse,
+            "description": "Fixture not found for the requested date.",
+        },
+        422: {
+            "model": DashletErrorResponse,
+            "description": "top_n out of the supported 1-20 range.",
+        },
         502: {"model": DashletErrorResponse, "description": "Portfolio fixture is invalid."},
     },
     response_model=PortfolioConcentrationResponse,
 )
 def get_top_concentrations(
     date: str | None = _optional_date_query(description=OBSERVATION_DATE_DESCRIPTION),
-    top_n: int = Query(5, ge=1, le=20, description="Number of top concentrations to return (1-20)."),
+    top_n: int = Query(
+        5, ge=1, le=20, description="Number of top concentrations to return (1-20)."
+    ),
 ) -> PortfolioConcentrationResponse:
     resolved_date = _resolve_observation_date_str(date)
     try:
@@ -555,8 +571,12 @@ def get_top_concentrations(
     except ProviderError as exc:
         raise _provider_error_to_http(exc)
 
-    top_issuers = sorted(result.issuer_exposures, key=lambda i: abs(i.net_weight_pct), reverse=True)[:top_n]
-    top_sectors = sorted(result.sector_exposures, key=lambda s: abs(s.net_weight_pct), reverse=True)[:top_n]
+    top_issuers = sorted(
+        result.issuer_exposures, key=lambda i: abs(i.net_weight_pct), reverse=True
+    )[:top_n]
+    top_sectors = sorted(
+        result.sector_exposures, key=lambda s: abs(s.net_weight_pct), reverse=True
+    )[:top_n]
 
     return PortfolioConcentrationResponse(
         observation_date=result.provenance.observation_date,
@@ -574,7 +594,10 @@ def get_top_concentrations(
     description="Compare sector-level net exposure between two observation dates and return the deltas.",
     response_description="Per-sector net exposure deltas with provenance.",
     responses={
-        404: {"model": DashletErrorResponse, "description": "Fixture not found for at least one requested date."},
+        404: {
+            "model": DashletErrorResponse,
+            "description": "Fixture not found for at least one requested date.",
+        },
         502: {"model": DashletErrorResponse, "description": "Portfolio fixture is invalid."},
     },
     response_model=PortfolioComparisonResponse,

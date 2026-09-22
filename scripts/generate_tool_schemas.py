@@ -17,6 +17,7 @@ stale relative to the current dashlet source:
 
     uv run python scripts/generate_tool_schemas.py --check
 """
+
 from __future__ import annotations
 
 import json

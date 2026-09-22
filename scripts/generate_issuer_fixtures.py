@@ -18,6 +18,7 @@ reference ticker:
     uv run python scripts/generate_issuer_fixtures.py
     uv run python scripts/generate_issuer_fixtures.py --tickers AAPL MSFT GOOGL
 """
+
 from __future__ import annotations
 
 import argparse
@@ -49,8 +50,12 @@ def generate_fixture(ticker: str, provider: PublicIssuerProvider) -> None:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--tickers", nargs="+", default=DEFAULT_TICKERS, help="Tickers to fetch and freeze")
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+    parser.add_argument(
+        "--tickers", nargs="+", default=DEFAULT_TICKERS, help="Tickers to fetch and freeze"
+    )
     args = parser.parse_args()
 
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)

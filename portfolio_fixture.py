@@ -81,7 +81,9 @@ def _weight_pct(net_value: float, denominator: float) -> float:
     return (net_value / denominator) * 100.0
 
 
-def compute_sector_exposures(positions: list[Position], *, net_denominator: float) -> list[SectorExposure]:
+def compute_sector_exposures(
+    positions: list[Position], *, net_denominator: float
+) -> list[SectorExposure]:
     by_sector: dict[str, list[Position]] = {}
     for position in positions:
         by_sector.setdefault(position.sector, []).append(position)
@@ -103,7 +105,9 @@ def compute_sector_exposures(positions: list[Position], *, net_denominator: floa
     return sorted(exposures, key=lambda exposure: exposure.sector)
 
 
-def compute_issuer_exposures(positions: list[Position], *, net_denominator: float) -> list[IssuerExposure]:
+def compute_issuer_exposures(
+    positions: list[Position], *, net_denominator: float
+) -> list[IssuerExposure]:
     by_issuer: dict[tuple[str, str], list[Position]] = {}
     for position in positions:
         by_issuer.setdefault((position.issuer, position.sector), []).append(position)
